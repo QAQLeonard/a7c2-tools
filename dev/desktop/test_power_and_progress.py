@@ -97,8 +97,8 @@ class PowerProgressTests(unittest.TestCase):
         self.assertEqual(len(request['arguments']['operations']),2)
         self.assertEqual(request['arguments']['operations'][0],dict(slot=4,action='restore'))
         self.assertEqual(window.settings['look_direct_work'],request['arguments']['workspace'])
-        self.assertIn('未添加的槽位保持原样',question.call_args.args[2])
-        self.assertIn('恢复 ST 默认',question.call_args.args[2])
+        self.assertIn('slots not added stay unchanged',question.call_args.args[2])
+        self.assertIn('restore ST default',question.call_args.args[2])
         self.assertTrue(window.camera_operation)
         self.assertFalse(window.stop.isEnabled())
 
@@ -113,7 +113,7 @@ class PowerProgressTests(unittest.TestCase):
         self.assertFalse(pending.setup_presets.isChecked())
         self.assertFalse(pending.setup_presets.isEnabled())
         self.assertEqual(pending.setup_args()['options'], options)
-        self.assertIn('不会新增六款', pending.setup_preset_summary.text())
+        self.assertIn('the six looks will not be added', pending.setup_preset_summary.text())
 
     def test_header_has_no_battery_input_and_cancel_opens_no_job(self):
         window = self.window()
@@ -122,7 +122,7 @@ class PowerProgressTests(unittest.TestCase):
         with patch.object(W.QMessageBox, 'question', return_value=W.QMessageBox.Cancel) as question, \
              patch.object(jobs, 'new_job') as job:
             window.launch('look_install', {'workspace': 'not-opened'})
-        self.assertIn('电量充足', question.call_args.args[2])
+        self.assertIn('enough battery', question.call_args.args[2])
         job.assert_not_called()
 
     def test_vertical_cleanup_is_part_of_off_not_a_separate_button(self):
@@ -200,7 +200,7 @@ class PowerProgressTests(unittest.TestCase):
         self.assertEqual(request['action'], 'direct_resume_factory')
         self.assertEqual(request['arguments']['failed_workspace'], str(failed.resolve()))
         self.assertTrue(request['arguments']['power_confirmed'])
-        self.assertIn('已恢复的内容不重复写入', question.call_args.args[2])
+        self.assertIn('restored content is not written again', question.call_args.args[2])
 
     def test_cancelling_auto_continuation_preserves_original_selection(self):
         window = self.window()
@@ -269,7 +269,7 @@ class PowerProgressTests(unittest.TestCase):
         self.assertEqual(request['action'], 'direct_verify')
         self.assertTrue(request['arguments']['factory_verify'])
         window.process = None
-        with self.assertRaisesRegex(ValueError, '没有旧备份恢复记录'):
+        with self.assertRaisesRegex(ValueError, 'has no old-backup restore record'):
             worker.run('restore_verify', {'workspace': str(self.root / 'unused-recovery')}, self.root)
 
     def test_completed_continuation_is_verified_first_with_rewrite_fallback(self):
@@ -287,7 +287,7 @@ class PowerProgressTests(unittest.TestCase):
             window.launch('direct_factory_reset', {'workspace': 'not-started'})
         # The worker verifies the finished restore first and writes only if
         # the camera changed since, so the power confirmation is required.
-        self.assertIn('先只读核对', question.call_args.args[2])
+        self.assertIn('Verifies read-only first', question.call_args.args[2])
         request = json.loads((window.current_job / 'request.private.json').read_text())
         self.assertEqual(request['action'], 'direct_resume_factory')
         self.assertEqual(request['arguments']['failed_workspace'], str(completed.resolve()))
@@ -351,7 +351,7 @@ class PowerProgressTests(unittest.TestCase):
         window.poll_job()
         self.assertIsNone(window.process)
         self.assertEqual(window.progress.value(), 100)
-        self.assertIn('完成', window.status.text())
+        self.assertIn('Done', window.status.text())
 
     def test_waiting_reload_popup_is_after_worker_cleanup_and_never_accepts_photos(self):
         for action, phase, mode in (('setup_all','WAIT_RELOAD','install_all'),
@@ -373,7 +373,7 @@ class PowerProgressTests(unittest.TestCase):
                     window.finished(0, None)
                     window.finished(0, None)
                 popup.assert_called_once()
-                self.assertIn('无需再点核对' if mode=='fl23_enable' else '取电池至少 1 分钟', window.status.text())
+                self.assertIn('no verification click needed' if mode=='fl23_enable' else 'remove the battery for at least 1 minute', window.status.text())
                 self.assertEqual(window.progress.value(),70 if action=='setup_all' else 100)
 
     def test_failed_or_already_loaded_job_does_not_prompt_power_removal(self):
@@ -397,27 +397,27 @@ class PowerProgressTests(unittest.TestCase):
                 window.process=Mock()
                 def popup(*args):
                     self.assertIsNone(window.process)
-                    self.assertIn('试听' if action=='sound_audition' else '保存尚未开始',args[1])
-                    self.assertIn('保持相机开机' if action=='sound_audition' else '本次没有',args[2])
+                    self.assertIn('Audition' if action=='sound_audition' else 'Save not started',args[1])
+                    self.assertIn('keep the camera on' if action=='sound_audition' else 'nothing was written',args[2])
                 with patch.object(W.QMessageBox,'information',side_effect=popup) as notice, \
                      patch.object(window,'show_reload_guide') as cold:
                     window.finished(0,None)
                     window.finished(0,None)
                     notice.assert_called_once()
                     cold.assert_not_called()
-                self.assertIn('试听已准备好' if action=='sound_audition' else '等待操作',window.status.text())
+                self.assertIn('Audition ready' if action=='sound_audition' else 'Waiting',window.status.text())
 
     def test_reload_guide_has_order_wait_and_readonly_explanation(self):
         from desktopapp import reloadguide
         text = reloadguide.text(mode='fl23_enable')
-        steps = ['1. 拔掉相机 USB', '2. 等待相机存取灯停止闪烁', '3. 将相机电源拨到 OFF',
-                 '4. 取下电池', '5. 装回电池并开机']
+        steps = ['1. Unplug the camera', '2. Wait for the camera', '3. Switch the camera power to OFF',
+                 '4. Remove the battery', '5. Reinsert the battery and power on']
         self.assertEqual(sorted(text.index(step) for step in steps), [text.index(step) for step in steps])
-        self.assertIn('至少等待 1 分钟', text)
-        self.assertIn('此前恢复原厂', text)
-        self.assertIn('不会再刷一次', reloadguide.text(setup=True))
-        self.assertIn('不必再接电脑点击核对', text)
-        self.assertIn('继续安装', reloadguide.text(setup=True))
+        self.assertIn('wait at least 1 minute', text)
+        self.assertIn('earlier factory restore', text)
+        self.assertIn('does not flash again', reloadguide.text(setup=True))
+        self.assertIn('No need to reconnect the computer to verify', text)
+        self.assertIn('Continue installation', reloadguide.text(setup=True))
 
     def test_names_only_pause_shows_exact_instructions_and_never_claims_installed(self):
         from desktopapp import reloadguide
@@ -428,9 +428,9 @@ class PowerProgressTests(unittest.TestCase):
         with patch.object(window,'show_reload_guide') as popup:window.finished(0,None)
         popup.assert_called_once_with(setup=True,mode='resource_reload')
         self.assertEqual(window.progress.value(),40)
-        self.assertIn('程序尚未写入',window.status.text())
+        self.assertIn('program is not written yet',window.status.text())
         text=reloadguide.text(setup=True,mode='resource_reload')
-        self.assertIn('先不用拍照',text);self.assertIn('不重复写名称',text)
+        self.assertIn('No need to take photos',text);self.assertIn('without rewriting names',text)
 
 
 if __name__ == '__main__':

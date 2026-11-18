@@ -10,25 +10,25 @@ def archive_error(state):
 
 
 def text(state):
-    if state.get('phase')!='COMPLETE':raise ValueError('上次安装尚未结束，请使用“继续安装”。')
+    if state.get('phase')!='COMPLETE':raise ValueError('The previous installation has not finished; use "Continue installation".')
     options=state.get('options',{})
-    lines=['本次所选操作已完成，程序与设置核对通过。','请在机身检查预览、拍摄和回放。','',
-        'FL2／FL3：'+('已启用' if options.get('fl23',True) else '本次未改动')]
+    lines=['The selected operations are complete; program and settings checks passed.','Check preview, shooting and playback on the camera.','',
+        'FL2/FL3: '+('enabled' if options.get('fl23',True) else 'not changed this time')]
     looks=options.get('looks',[])
     if looks:
-        lines.append('自定义外观：已写入')
-        lines.extend('  自订 %s：%s'%(row['slot'],row.get('name') or '沿用文件名称') for row in looks)
-    else:lines.append('自定义外观：本次未改动')
-    lines.append('电子快门声：'+('已启用支持，请检查机身音频信号设置' if options.get('sound',True) else '本次未选择'))
-    if options.get('plugin'):lines.append('Lightroom 插件：已安装，请在插件管理器中启用')
+        lines.append('Custom looks: written')
+        lines.extend('  Custom %s: %s'%(row['slot'],row.get('name') or 'name from file') for row in looks)
+    else:lines.append('Custom looks: not changed this time')
+    lines.append('Electronic shutter sound: '+('support enabled; check the camera\'s Audio signals setting' if options.get('sound',True) else 'not selected this time'))
+    if options.get('plugin'):lines.append('Lightroom plug-in: installed; enable it in the Plug-in Manager')
     if options.get('vertical',True):
         if state.get('vertical_result',{}).get('persistent') and state['vertical_result'].get('loaded_verified'):
-            lines.append('竖屏拍摄信息：已保存开启，并已核对重开后的运行状态；无需每次连接电脑开启。')
+            lines.append('Vertical shooting info: saved as on, and the running state after restart was verified; no need to turn it on from the computer each time.')
         else:
-            lines.extend(['竖屏拍摄信息：旧版仅开启本次运行。',
-                '旧任务未保存为开机默认；可在新版“竖屏显示”页保存开启。'])
-    else:lines.append('竖屏拍摄信息：本次未改动')
-    lines.extend(['','本次安装已结束，无需为了查看结果再次刷写。'])
+            lines.extend(['Vertical shooting info: the old version only turned it on for this session.',
+                'The old task did not save it as the power-on default; save it as on from the new "Vertical Display" page.'])
+    else:lines.append('Vertical shooting info: not changed this time')
+    lines.extend(['','This installation has finished; there is no need to flash again just to view the result.'])
     return '\n'.join(lines)
 
 

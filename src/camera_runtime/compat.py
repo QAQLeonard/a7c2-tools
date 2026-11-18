@@ -6,7 +6,7 @@ from pathlib import Path
 import sys
 import core
 
-WARNING='不驗證韌體來源。非本倉庫修改的韌體可能與 FL23 衝突，造成相機無法正常啟動；請保留備份。'
+WARNING='Firmware origin is not verified. Firmware modified outside this repository may conflict with FL23 and stop the camera from starting normally; keep your backups.'
 LEGACY_CONVERTER=bytes.fromhex('e1000035002800511f1400718800005400e4031140000039c0035fd63f2c007188020054800000100048613840000039c0035fd600030201100f1112050d13141f2003d51f2003d51f2003d51f2003d51f2003d51f2003d51f2003d51f2003d51f2003d51f2003d51f2003d51f2003d5')
 
 
@@ -15,12 +15,12 @@ def modules():
     try:
         from looktool import device_layout,firmware,nativebuild,worker
     except ImportError as exc:
-        raise ValueError('LUT 相容模式缺少依賴，請更新完整工具並重新開啟 FL23.cmd。') from exc
+        raise ValueError('LUT compatibility mode is missing dependencies; update the complete tool and reopen FL23.cmd.') from exc
     return device_layout,firmware,nativebuild,worker
 
 
 def plan(ap,cp,version=core.VERSION,*,transitions=True):
-    if version!=core.VERSION:raise ValueError('FL23 只適用於 ILCE-7CM2 2.01；請依相機版本頁填寫')
+    if version!=core.VERSION:raise ValueError('FL23 supports ILCE-7CM2 firmware 2.01 only; enter the version shown on the camera version page')
     layout,firmware,_,_=modules()
     before=dict(zip(core.PROGRAMS,[ap,cp]))
     # These are instruction-boundary checks, not file-source fingerprints.
@@ -31,7 +31,7 @@ def plan(ap,cp,version=core.VERSION,*,transitions=True):
     manifest=core.read_json(core.BASE/'assets/patches.json')
     if lut:
         for at,expected in [(0x138814,bytes.fromhex('3720e7e7')),(0x13882e,bytes.fromhex('3820dae7'))]:
-            if cp[at:at+len(expected)]!=expected:raise ValueError(f'CP FL23 呼叫位置衝突：{at:#x}；沒有寫入')
+            if cp[at:at+len(expected)]!=expected:raise ValueError(f'CP FL23 call site conflict: {at:#x}; nothing written')
     after={};regions={};changed=False
     for chip,name in enumerate(core.PROGRAMS):
         source=before[name];result=bytearray(source);spans=[]
@@ -43,18 +43,18 @@ def plan(ap,cp,version=core.VERSION,*,transitions=True):
                 if native is None:continue
                 current=source[at:at+len(new)]
                 if current==new:continue
-                if current not in (old,native[3],*layout.fl23_previous_values(at)):raise ValueError(f'CP FL23 原生曲線／模式位置衝突：{at:#x}')
+                if current not in (old,native[3],*layout.fl23_previous_values(at)):raise ValueError(f'CP FL23 native curve/mode site conflict: {at:#x}')
                 result[at:at+len(new)]=new;changed=True
                 for offset in range(0,len(new),4096):spans.append((at+offset,min(4096,len(new)-offset)))
                 continue
-            if len(old)!=len(new) or at+len(old)>len(source):raise ValueError(f'補丁位置越界：{name} {at:#x}')
+            if len(old)!=len(new) or at+len(old)>len(source):raise ValueError(f'Patch site out of range: {name} {at:#x}')
             current=source[at:at+len(old)]
             if current==new:continue
             if current!=old and not (chip==1 and current in layout.fl23_previous_values(at)):
                 detail=current[:64].hex()
-                raise ValueError(f'補丁位置衝突：{name} {at:#x}；沒有寫入；'
-                    f'目前位元組({len(current)} bytes, first 64)={detail}。'
-                    '若使用過舊版本，請先依 README 恢復原廠功能後再安裝；保留本次日誌。')
+                raise ValueError(f'Patch site conflict: {name} {at:#x}; nothing written; '
+                    f'current bytes ({len(current)} bytes, first 64)={detail}. '
+                    'If an older version was used, follow the README to factory restore first, then install; keep this log.')
             result[at:at+len(new)]=new;changed=True
             for offset in range(0,len(new),4096):spans.append((at+offset,min(4096,len(new)-offset)))
         if chip==1:
@@ -71,7 +71,7 @@ def plan(ap,cp,version=core.VERSION,*,transitions=True):
     forward=firmware.transition(before,after,regions)
     reverse=firmware.transition(after,before,regions)
     if firmware.apply(firmware.apply(before,forward),reverse)!=before:
-        raise ValueError('完整還原候選不符')
+        raise ValueError('Full restore candidate mismatch')
     return identity,False,after,forward,reverse
 
 
@@ -90,18 +90,18 @@ def validate(root,state):
     ap,cp=[(root/'original'/(n+'.bin')).read_bytes() for n in core.PROGRAMS]
     identity,enabled,after,_,_=plan(ap,cp,state.get('version',core.VERSION),transitions=False)
     if spec['identity']!=identity or spec['already_enabled']!=enabled:
-        raise ValueError('相容任務來源或目標已變')
+        raise ValueError('Compatibility job source or target has changed')
     for n,data in after.items():
-        if (root/'candidate'/n).read_bytes()!=data:raise ValueError('相容候選已變')
+        if (root/'candidate'/n).read_bytes()!=data:raise ValueError('Compatibility candidate has changed')
 
 
 def validate_enabled_colors(a,b):
     # Undo only the exact FL23 colour records, then re-merge. This proves
     # ownership without clearing calibration, user recipes or LUT tables.
     x,y=bytearray(a),bytearray(b)
-    if len(x)!=8192 or len(y)!=28672:raise ValueError('色彩單元長度不符')
+    if len(x)!=8192 or len(y)!=28672:raise ValueError('Colour unit length mismatch')
     for row in core.read_json(core.BASE/'assets/colors.json'):
         p,s=row['parameter'],row['slot'];x[0x1200+p]=0;y[0x196+p]=0
         x[0x1250+s*64:0x1250+(s+1)*64]=bytes(64)
         y[0x1e0+s*768:0x1e0+s*768+576]=bytes(576)
-    if core.merge_colors(bytes(x),bytes(y))!=(a,b):raise ValueError('既有 FL23 色彩資料不完整；拒絕重寫')
+    if core.merge_colors(bytes(x),bytes(y))!=(a,b):raise ValueError('Existing FL23 colour data is incomplete; refusing to rewrite')

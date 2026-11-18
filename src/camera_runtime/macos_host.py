@@ -14,7 +14,7 @@ import time
 STABLE_SECONDS=3
 STABLE_TIMEOUT=20
 NORMAL_RETURN_SECONDS=60
-MSC_PROMPT='若相机屏幕询问 USB 连接方式，请选择第 2 项「影像传输（MSC）」。'
+MSC_PROMPT='If the camera screen asks for the USB connection mode, choose item 2, "Image Transfer (MSC)".'
 
 
 def registry_nodes(tree):
@@ -54,7 +54,7 @@ def camera_media():
                 and node.get('IOObjectClass')=='IOUSBHostDevice'):
             found.setdefault(node.get('IORegistryEntryID',id(node)),node)
     cameras=list(found.values())
-    if len(cameras)!=1:raise RuntimeError('请只连接一台海量存储模式的 A7C II，再准备 USB 连接。'+MSC_PROMPT)
+    if len(cameras)!=1:raise RuntimeError('Connect exactly one A7C II in Mass Storage mode, then prepare the USB connection. '+MSC_PROMPT)
     registry=cameras[0].get('IORegistryEntryID')
     if registry is None:raise RuntimeError('Missing camera USB registry identity')
     # Disk identifiers come only from the selected USB device's registry
@@ -92,7 +92,7 @@ def wait_for_stable_media():
         if topology!=previous:previous,stable_since=topology,now
         elif now-stable_since>=STABLE_SECONDS:return
         if now>=deadline:
-            raise RuntimeError('相机磁盘尚未稳定，尚未接管 USB。'+MSC_PROMPT+'等存取灯停止后重试。')
+            raise RuntimeError('The camera disk is not stable yet; USB has not been taken over. '+MSC_PROMPT+' Wait for the access light to stop, then retry.')
         time.sleep(.5)
 
 
@@ -103,18 +103,18 @@ def unmount_camera():
     for disk in sorted(name for name,row in media.items() if row['whole']):
         now,current=camera_media()
         if now!=registry or set(current)!=set(media):
-            raise RuntimeError('相机或磁盘在卸载前发生变化，尚未接管 USB。请重新连接后重试。')
-        print('正在卸载相机磁盘（不拔线）：'+disk,flush=True)
+            raise RuntimeError('The camera or disk changed before unmounting; USB has not been taken over. Reconnect and retry.')
+        print('Unmounting the camera disk (do not unplug): '+disk,flush=True)
         result=subprocess.run(['/usr/sbin/diskutil','unmountDisk','/dev/'+disk],
                               capture_output=True,text=True,timeout=30)
         print(result.stdout,flush=True)
         if result.stderr:print(result.stderr,file=sys.stderr,flush=True)
         if result.returncode:
-            raise RuntimeError('无法卸载相机存储卷。请关闭照片、图像捕捉及使用存储卡的程序后重试。')
+            raise RuntimeError('Cannot unmount the camera volume. Close Photos, Image Capture and any app using the memory card, then retry.')
         unmounted.append(disk)
     now,current=camera_media()
     if now!=registry or set(current)!=set(media) or any(row['mount'] for row in current.values()):
-        raise RuntimeError('相机存储卷未能全部卸载，尚未接管 USB。请关闭照片、图像捕捉及使用存储卡的程序后重试。')
+        raise RuntimeError('Not all camera volumes could be unmounted; USB has not been taken over. Close Photos, Image Capture and any app using the memory card, then retry.')
     return dict(unmounted=unmounted,camera_firmware_written=False)
 
 
@@ -144,21 +144,21 @@ def wait_normal_return(find):
     the next connection checks the identity again.
     """
     import usb.core
-    print('服务模式已退出，等待普通 USB 连接（最多 %d 秒）。'%NORMAL_RETURN_SECONDS+MSC_PROMPT,flush=True)
+    print('Service mode exited; waiting for the normal USB connection (up to %d seconds). '%NORMAL_RETURN_SECONDS+MSC_PROMPT,flush=True)
     deadline=time.monotonic()+NORMAL_RETURN_SECONDS
     last_error=None
     while True:
         try:device=find()
         except (RuntimeError,usb.core.USBError) as exc:
             detail=str(exc)
-            if detail!=last_error:print('等待普通 USB 重新枚举：'+detail,flush=True)
+            if detail!=last_error:print('Waiting for normal USB to re-enumerate: '+detail,flush=True)
             last_error=detail;device=None
         if device is not None:
             import usb.util
             usb.util.dispose_resources(device)
-            print('普通 USB 连接已恢复。',flush=True)
+            print('Normal USB connection restored.',flush=True)
             return True
         if time.monotonic()>=deadline:
-            print('%d 秒内未恢复普通 USB 连接。下次操作前请在相机上选择「影像传输（MSC）」。'%NORMAL_RETURN_SECONDS,flush=True)
+            print('Normal USB connection not restored within %d seconds. Before the next operation, choose "Image Transfer (MSC)" on the camera.'%NORMAL_RETURN_SECONDS,flush=True)
             return False
         time.sleep(.5)

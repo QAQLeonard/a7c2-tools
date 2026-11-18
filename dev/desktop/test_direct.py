@@ -62,10 +62,10 @@ class DirectTransactionTests(unittest.TestCase):
             output = io.StringIO()
             with redirect_stdout(output):
                 for phase in ('PLANNED','PREFLIGHT_VERIFIED','RESTORING_NAMES','RESTORING_SETTINGS'):job.save(phase)
-            self.assertNotIn('恢复', output.getvalue())
-            self.assertIn('写入计划', output.getvalue())
-            self.assertNotIn('只校验完成', output.getvalue())
-            self.assertIn('写入前检查通过', output.getvalue())
+            self.assertNotIn('Restor', output.getvalue())
+            self.assertIn('Write plan', output.getvalue())
+            self.assertNotIn('Verification only', output.getvalue())
+            self.assertIn('Pre-write check passed', output.getvalue())
 
     def test_no_backup_and_full_readback_with_selected_settings_only(self):
         job = SimDirect(self.root / 'direct', factory=self.camera)
@@ -96,7 +96,7 @@ class DirectTransactionTests(unittest.TestCase):
         job = SimDirect(self.root / 'cold', factory=self.camera)
         with patch.object(direct, 'plan', side_effect=self.plan):
             job.run_direct('slot_default', version='2.01', power_confirmed=True, slot=1)
-            with self.assertRaisesRegex(ValueError, '冷启动'):
+            with self.assertRaisesRegex(ValueError, 'cold boot'):
                 job.verify_direct()
             self.camera.boot = 'test-boot-2'
             self.assertEqual(job.verify_direct()['phase'], 'LOADED')
@@ -217,7 +217,7 @@ class DirectTransactionTests(unittest.TestCase):
             self.assertLess(calls.index(('forward_names',1)),calls.index(('program',1)))
             self.assertTrue(result['names_cleanup_pending'])
             self.assertNotIn(('forward_names',3),calls)
-            with self.assertRaisesRegex(ValueError,'冷启动'):job.verify_direct()
+            with self.assertRaisesRegex(ValueError,'cold boot'):job.verify_direct()
             self.assertNotIn(('forward_names',3),calls)
             self.camera.boot='test-boot-2'
             verified=job.verify_direct()

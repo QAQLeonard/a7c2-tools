@@ -17,7 +17,7 @@ MIN_ROUNDS=5
 MAX_ROUNDS=60
 MIN_MB_PER_SECOND=2.0
 MIN_BYTES,MAX_BYTES=1024*1024,256*1024*1024
-NOTE='通过只说明这段时间内连续只读传输稳定；不保证刷写期间一定不掉线，也不代表线材认证。'
+NOTE='A pass only shows that continuous read-only transfers were stable during this period; it does not guarantee the connection will not drop while flashing, and it is not a cable certification.'
 
 
 class Incomplete(RuntimeError):
@@ -43,10 +43,10 @@ def run(job,*,factory=None,clock=time.monotonic,min_seconds=MIN_SECONDS,min_roun
             baseline={}
             while number<min_rounds or elapsed()<min_seconds:
                 if number>=max_rounds:
-                    raise Incomplete('已读 %d 轮，达到轮数上限，但连续读取只持续 %.0f 秒，未满 %d 秒；本次不算通过'%
+                    raise Incomplete('Read %d rounds and reached the round limit, but continuous reading lasted only %.0f s, less than %d s; this run does not count as a pass'%
                                      (number,elapsed(),min_seconds))
                 number+=1
-                print('USB 稳定性检测：第 %d 轮只读读取程序文件（至少 %d 轮、连续 %d 秒），不写固件或设置。'%
+                print('USB stability check: round %d, read-only read of program files (at least %d rounds, %d s continuous); no firmware or settings are written.'%
                       (number,min_rounds,min_seconds),flush=True)
                 reads=[]
                 for path in PATHS:
@@ -55,12 +55,12 @@ def run(job,*,factory=None,clock=time.monotonic,min_seconds=MIN_SECONDS,min_roun
                         raw=camera.read(path)
                         seconds=clock()-begin
                         if raw is None or not MIN_BYTES<=len(raw)<=MAX_BYTES:
-                            raise ValueError('程序文件未完整读回：'+path)
+                            raise ValueError('Program file was not fully read back: '+path)
                         if path in baseline and raw!=baseline[path]:
-                            raise ValueError('重复读回的字节不一致：'+path)
+                            raise ValueError('Repeated readback returned different bytes: '+path)
                         rate=len(raw)/1048576/seconds if seconds>0 else None
                         if rate is not None and rate<min_rate:
-                            raise ValueError('读取 %s 只有 %.2f MB/s，低于 %.1f MB/s；连接可能经过 USB 1.1、扩展坞或线材质量较差'%
+                            raise ValueError('Reading %s ran at only %.2f MB/s, below %.1f MB/s; the connection may go through USB 1.1, a hub, or a poor-quality cable'%
                                              (path,rate,min_rate))
                     except BaseException:
                         mark=getattr(camera,'mark_unknown',None)
@@ -78,7 +78,7 @@ def run(job,*,factory=None,clock=time.monotonic,min_seconds=MIN_SECONDS,min_roun
                       slowest_mb_per_second=min(speeds) if speeds else None,
                       fastest_mb_per_second=max(speeds) if speeds else None)
         save()
-        print('%d 轮只读传输均完成，共 %.1f MB，连续读取 %.0f 秒，逐轮字节一致。%s'%
+        print('All %d read-only rounds completed, %.1f MB in total, %.0f s of continuous reading, bytes identical in every round. %s'%
               (len(report['rounds']),report['total_bytes']/1048576,report['seconds'],NOTE),flush=True)
         return report
     except BaseException as exc:
@@ -90,6 +90,6 @@ def run(job,*,factory=None,clock=time.monotonic,min_seconds=MIN_SECONDS,min_roun
                       error_type=type(exc).__name__,error=str(exc),camera_io_ended=True,seconds=round(elapsed(),3))
         save()
         if incomplete:
-            raise RuntimeError('USB 稳定性检测未完成：%s。本次没有固件或设置写入。'%str(exc)) from exc
-        raise RuntimeError('USB 稳定性检测未通过（%s）：%s。请换线或直连电脑 USB 接口后重测；本次没有固件或设置写入。'%
-                           ('第 %d 轮'%number if connected else '连接阶段',str(exc))) from exc
+            raise RuntimeError('USB stability check incomplete: %s. No firmware or settings were written.'%str(exc)) from exc
+        raise RuntimeError('USB stability check failed (%s): %s. Try another cable or connect directly to a computer USB port and test again; no firmware or settings were written.'%
+                           ('round %d'%number if connected else 'connection stage',str(exc))) from exc

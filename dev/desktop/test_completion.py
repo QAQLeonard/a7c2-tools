@@ -47,10 +47,10 @@ class CompletionTests(unittest.TestCase):
         def dialog(parent, title, text):
             self.assertIsNone(window.process)
             self.assertEqual(window.progress.value(), 100)
-            self.assertEqual(title, '安装完成')
-            self.assertIn('电子快门声：本次未选择', text)
-            self.assertIn('未保存为开机默认', text)
-            self.assertIn('自订 4：Astia', text)
+            self.assertEqual(title, 'Installation complete')
+            self.assertIn('Electronic shutter sound: not selected this time', text)
+            self.assertIn('did not save it as the power-on default', text)
+            self.assertIn('Custom 4: Astia', text)
         with patch.object(W.QMessageBox, 'information', side_effect=dialog) as popup:
             window.finished(0, None)
             window.finished(0, None)
@@ -59,7 +59,7 @@ class CompletionTests(unittest.TestCase):
         self.assertFalse(saved['physical_checks_accepted'])
         self.assertNotIn('error', saved)
         self.assertEqual(saved['previous_errors'][0]['error'], 'historic EBUSY')
-        self.assertIn('新的一键安装', window.setup_button.text())
+        self.assertIn('new one-click install', window.setup_button.text())
 
     def test_view_previous_result_needs_no_new_job_and_preserves_failed_evidence(self):
         evidence = self.setup / 'failed/result.bin'
@@ -105,15 +105,15 @@ class CompletionTests(unittest.TestCase):
         window = self.window()
         with patch.object(W.QMessageBox, 'information') as popup:
             window.show_setup_result()
-        self.assertEqual(popup.call_args.args[1], '安装尚未结束')
+        self.assertEqual(popup.call_args.args[1], 'Installation not finished')
         self.assertEqual(json.loads((self.setup / 'setup.private.json').read_text())['error'], 'historic EBUSY')
 
     def test_persistent_completed_result_explains_no_per_boot_computer_action(self):
         self.state['vertical_result']=dict(persistent=True,loaded_verified=True,running='ON',saved='ON',alias_count=3)
         text=completion.text(self.state)
-        self.assertIn('已保存开启',text)
-        self.assertIn('无需每次连接电脑',text)
-        self.assertNotIn('旧版仅开启',text)
+        self.assertIn('saved as on',text)
+        self.assertIn('no need to turn it on from the computer each time',text)
+        self.assertNotIn('old version only turned it on',text)
 
     def test_worker_summary_is_short_but_full_private_evidence_is_retained(self):
         self.state.pop('error')

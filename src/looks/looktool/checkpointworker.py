@@ -106,7 +106,7 @@ def purge_report(raw,build):
     v=nameworker.REPORT.unpack(raw)
     if (v[:5]!=(b'A7NMR001',1,5,9,build['count']) or any(v[i] for i in (5,6,7,8,9,10,17))
         or v[11]<=0 or any(v[13:16]) or v[16]>v[12]):
-        raise ValueError('旧任务名称备份清理未完成，相机名称文件没有改动；请完整断电重开后再点恢复。'
+        raise ValueError('Cleanup of old-job name backups is incomplete; the camera name files were not changed. Do a full power cycle, then click restore again. '
                          'Backup cleanup incomplete: '+repr(v[:18]))
     return {'mode':5,'matched':v[12],'removed':v[16]}
 
@@ -126,21 +126,21 @@ def program_report(raw,mode,build):
         raise ValueError('Checkpoint program operation incomplete: '+repr(v))
     return {'mode':mode,'windows':v[4]}
 
-REBOOT='请完整断电重开（拔 USB、关机、取下电池至少 1 分钟后装回开机），再接回 USB 点同一个恢复按钮。'
+REBOOT='Do a full power cycle (unplug USB, power off, remove the battery for at least 1 minute, reinsert it and power on), then reconnect USB and click the same restore button. '
 
 
 def names_failure_detail(v,mode,build,raw):
     """User guidance for a failed name operation; the native report stays appended."""
     if v[5]==-28 and mode==2:
-        return ('相机 /usr 分区的临时空间用完了：已恢复 %d/%d 个名称文件，程序和已恢复的部分保持不变，'
-                '相机可以正常开机使用。旧文件占用的空间要断电后才释放。' % (v[15],build['count']) + REBOOT +
-                '只会处理剩下的部分。')
+        return ('The camera /usr partition ran out of temporary space: %d/%d name files restored; the programs and the restored part are unchanged, '
+                'and the camera can start and be used normally. Space held by the old files is only freed after a power cycle. ' % (v[15],build['count']) + REBOOT +
+                'Only the remaining part will be processed.')
     if v[5]==-28:
-        return '写入前检查发现相机 /usr 分区临时空间不足，本次没有写入。' + REBOOT
+        return 'The pre-write check found too little temporary space on the camera /usr partition; nothing was written this time. ' + REBOOT
     if v[5]==-30 and v[3]==1:
-        return ('相机 /usr 分区仍处于可写挂载，通常是上一次操作后还没有完整断电重开；本次没有写入。' + REBOOT)
+        return ('The camera /usr partition is still mounted read-write, usually because there was no full power cycle after the previous operation; nothing was written this time. ' + REBOOT)
     if names_completed_mount_busy(raw,mode,build):
-        return '名称内容已完成，但只读挂载忙碌；需要完成设置与重新加载准备后再重开核对。'
+        return 'Name content is complete, but the read-only remount is busy; finish the settings and reload preparation, then restart and verify.'
     return ''
 
 

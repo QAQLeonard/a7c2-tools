@@ -108,15 +108,15 @@ class Stage:
 
     def finish_readonly(self):
         if self.aliases.get('readonly'):
-            raise ValueError('竖屏资源处理已结束，仍需冷重开恢复 /usr 只读状态；不标记加载成功')
+            raise ValueError('Vertical Display resource handling finished, but a cold restart is still needed to restore the /usr read-only state; not marked as loaded')
         wanted = b'\0' if self.enabled else b'\1'
         for memory in (False, True):
             if self.camera.records(self.camera.snapshot(memory))[0][SETTING].data != wanted:
                 raise ValueError('Reloaded vertical saved/live switch differs')
         if self.before['value'] != wanted[0] or self.aliases['prior'] != (7 if self.enabled else 0):
-            raise ValueError('竖屏保存值已读取，但开机运行状态／资源尚不符合目标；不以 RAM 临时开启代替持久化验证')
+            raise ValueError('Vertical Display saved value read, but the running state/resources after boot do not match the target yet; a temporary RAM enable is not accepted in place of persistent verification')
         if not self.enabled:
             from .portraitjob import remove_for_vertical_stage
             result=remove_for_vertical_stage(self.camera,self.owner,self.originals)
             if result and (result.get('readonly_deferred_busy') or result.get('cleanup',{}).get('readonly_deferred_busy')):
-                raise ValueError('线框资源已清理，但只读挂载仍忙；完整断电后再核对恢复')
+                raise ValueError('Frame resources cleaned up, but the read-only remount is still busy; do a full power cycle, then verify the restore')

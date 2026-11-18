@@ -93,7 +93,7 @@ class AllInOneTests(unittest.TestCase):
             return result
         with self.assertRaises(TimeoutError):allinone.run(self.args, dispatch=fail)
         before = list(self.calls)
-        with self.assertRaisesRegex(ValueError, '不会重复刷写'):
+        with self.assertRaisesRegex(ValueError, 'will not be flashed again'):
             allinone.run(self.args, dispatch=self.dispatch)
         self.assertEqual(before, self.calls)
 
@@ -183,7 +183,7 @@ class AllInOneTests(unittest.TestCase):
         path=root/'setup.private.json';state=json.loads(path.read_text())
         state.update(phase='RESUMING_RESOURCES',install_workspace=str(candidate),resume_resource_from=str(root/'install'))
         path.write_text(json.dumps(state));before=list(self.calls)
-        with self.assertRaisesRegex(ValueError,'不会重复刷写'):
+        with self.assertRaisesRegex(ValueError,'will not be flashed again'):
             allinone.run(self.args,dispatch=self.dispatch)
         self.assertEqual(self.calls,before)
 
@@ -216,7 +216,7 @@ class AllInOneTests(unittest.TestCase):
             result=self.dispatch(action,args,folder)
             if action=='direct_verify':result.pop('vertical_result')
             return result
-        with self.assertRaisesRegex(ValueError,'持久化加载尚未确认'):
+        with self.assertRaisesRegex(ValueError,'Persistent loading of vertical display is not confirmed'):
             allinone.run(self.args,dispatch=no_proof)
         self.assertEqual([a for a,_ in self.calls].count('vertical_enable'),1)
 

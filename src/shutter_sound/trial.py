@@ -72,7 +72,7 @@ def factory(expected=None):
                     self.link=transport.RecoverySession(expected)
                     break
                 if time.monotonic()>=deadline:
-                    raise ValueError('未找到相机 USB 连接。请拔插 USB 并选择海量存储后重试；尚未进行服务认证或声音写入。')
+                    raise ValueError('No camera USB connection found. Unplug and replug USB, choose Mass Storage and retry; no service authentication or sound write has happened.')
                 time.sleep(.5)
             self.link.__enter__()
             self.identity = dict(self.link.identity)
@@ -185,9 +185,9 @@ def preflight(root, copy, zig=None, camera_factory=factory, *, expected=None, ad
             candidate.guard(values['appFw.so'], values['cpapp-b.bin'], installed=enabled)
             state['identity'] = camera.identity
             if adopt_only and not enabled:
-                raise ValueError('电子快门声尚未开启。请先点击“开启电子快门声”，完成断电重开后再试听；本次没有写入固件或注册试听。')
+                raise ValueError('The electronic shutter sound is not enabled yet. Click "Enable electronic shutter sound" first and complete a power cycle, then audition; no firmware was written and no audition registered.')
             if adopt_only and not current:
-                raise ValueError('旧版快门声音尚未限制机械快门。请重新点击“开启电子快门声”更新后再试听；本次未注册声音。')
+                raise ValueError('The older shutter sound build does not exclude the mechanical shutter yet. Click "Enable electronic shutter sound" again to update, then audition; no sound was registered.')
             evidence=values
             if current:
                 # Adoption performs no firmware write; keep small exact

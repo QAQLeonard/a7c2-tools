@@ -31,25 +31,25 @@ class ReloadGuideTests(unittest.TestCase):
 
     def test_sound_confirmation_instructions_preserve_the_audition_sequence(self):
         text = reloadguide.text(mode='sound_confirm')
-        self.assertIn('清除临时试听、恢复原声', text)
-        self.assertIn('已断电恢复原声，记录恢复完成', text)
-        self.assertIn('至少等待 1 分钟', text)
+        self.assertIn('clears the temporary audition and restores the original sound', text)
+        self.assertIn('Power-cycled to restore original sound; record restore complete', text)
+        self.assertIn('wait at least 1 minute', text)
 
     def test_audition_popup_keeps_power_until_listening_not_cold_reload(self):
         result=dict(phase='temporary_pcm_registered_cold_reload_required_after_test')
         self.assertFalse(reloadguide.required('sound_audition',result))
         notice=reloadguide.sound_notice('sound_audition',result)
-        for phrase in ('保持相机开机','不要关机','电子快门','确认试听正确','无需先恢复原声','保存当前自定义声音'):
+        for phrase in ('keep the camera on','do not power off','electronic shutter','Confirm audition is correct','without restoring the original sound first','Save current custom sound'):
             self.assertIn(phrase,notice['text'])
-        self.assertIn('只关闭说明',notice['text'])
+        self.assertIn('only closes the instructions',notice['text'])
 
     def test_install_prerequisites_have_distinct_guidance_not_failure_or_fake_completion(self):
         for phase in ('sound_conversion_required',):
             notice=reloadguide.sound_notice('sound_install',dict(phase=phase))
-            self.assertIn('保存尚未开始',notice['title'])
-            self.assertIn('等待操作',notice['status'])
+            self.assertIn('Save not started',notice['title'])
+            self.assertIn('Waiting',notice['status'])
         notice=reloadguide.sound_notice('sound_confirm',dict(phase='owner_confirmed_audio_cold_reload_required'))
-        self.assertIn('无需先断电或记录恢复',notice['text'])
+        self.assertIn('without power-cycling or recording a restore first',notice['text'])
         for phase in ('needs_review','installed_cold_test_pending'):
             self.assertIsNone(reloadguide.sound_notice('sound_install',dict(phase=phase)))
 
@@ -57,6 +57,6 @@ class ReloadGuideTests(unittest.TestCase):
 def test_setup_reload_names_continue_button():
     for mode in (None,'resource_reload'):
         message=reloadguide.text(setup=True,mode=mode)
-        assert '继续安装' in message
-        assert '继续上次安装' not in message
-        assert '接回 USB' in message
+        assert 'Continue installation' in message
+        assert 'Continue previous installation' not in message
+        assert 'reconnect usb' in message.lower()

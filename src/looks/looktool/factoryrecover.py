@@ -10,6 +10,10 @@ import re
 from . import checkpointworker, nameworker, nativebuild, worker
 
 FINISHED = {'AWAITING_RELOAD', 'LOADED', 'COMPLETE'}
+ACTIVE_LOADER_ERROR = ('A camera execution plugin is still present and cannot be overwritten while it runs; '
+                       'restore writing has not started. End the connection, do a full power cycle and retry')
+# Same message as written by earlier (Chinese) builds; kept so saved job states still match.
+LEGACY_ACTIVE_LOADER_ERROR = '相机执行插件仍存在，不能在执行期间覆盖；本次尚未恢复写入，请结束连接后完整断电再重试'
 
 
 def supersede_temporary(camera, folder, record):
@@ -26,9 +30,9 @@ def supersede_temporary(camera, folder, record):
     actual={name:raw for name,raw in actual.items() if raw is not None}
     if not actual:return 0
     if camera.temp_read('libJit.so',True) is not None:
-        raise ValueError('相机执行插件仍存在，不能在执行期间覆盖；本次尚未恢复写入，请结束连接后完整断电再重试')
+        raise ValueError(ACTIVE_LOADER_ERROR)
     if camera.read('/etc/ld.so.preload',True):
-        raise ValueError('相机存在启用中的 preload，尚未覆盖临时工作文件或开始恢复写入')
+        raise ValueError('The camera has an active preload; temporary work files were not overwritten and restore writing has not started')
     folder=Path(folder);folder.mkdir(parents=True,exist_ok=True)
     # Save every captured byte before removing anything on the camera. These
     # are tiny private worker/request/report files, not a body firmware backup.
@@ -42,10 +46,10 @@ def supersede_temporary(camera, folder, record):
     # Check the whole namespace before deletion. A newly appearing report or
     # loader means it is changing, not merely leftover data.
     if camera.temp_read('libJit.so',True) is not None:
-        raise ValueError('相机执行插件出现，已保存诊断，未覆盖工作文件')
+        raise ValueError('A camera execution plugin appeared; diagnostics saved, work files not overwritten')
     for name in names:
         if camera.temp_read(name,True)!=actual.get(name):
-            raise ValueError('相机临时状态仍在变化，已保存诊断，未覆盖工作文件：'+name)
+            raise ValueError('Camera temporary state is still changing; diagnostics saved, work files not overwritten: '+name)
     # Keep reports until last if the connection fails during cleanup.
     for name in sorted(actual,key=lambda value:value.endswith('.result')):
         if camera.temp_read(name,True)!=actual[name]:
@@ -54,7 +58,7 @@ def supersede_temporary(camera, folder, record):
         if camera.temp_read(name,True) is not None:
             raise ValueError('Temporary cleanup incomplete: '+name)
     record('factory_temporary_superseded',files=list(actual),old_operation_replayed=False)
-    print('旧临时工作文件已保存诊断并清理；重新读取相机现况，直接按内建原厂基准生成恢复计划，不重放旧任务。',flush=True)
+    print('Old temporary work files saved as diagnostics and cleaned up; re-reading the camera state and generating a restore plan directly from the built-in factory baseline, without replaying old jobs.',flush=True)
     return len(actual)
 
 
@@ -67,7 +71,7 @@ def prewrite_temporary_conflict(state):
     if state.get('error') not in {
         'Existing temporary state needs recovery: '+name for name in
         ('lut-names-staged.so','a7c2.names.request','a7c2.names.result')
-    } | {'相机执行插件仍存在，不能在执行期间覆盖；本次尚未恢复写入，请结束连接后完整断电再重试'}:return False
+    } | {ACTIVE_LOADER_ERROR,LEGACY_ACTIVE_LOADER_ERROR}:return False
     outstanding=set()
     for event in state.get('journal',[]):
         kind=event.get('event','')
@@ -116,7 +120,7 @@ def pending(work_root, preferred=None):
         try:
             state = json.loads(path.read_text(encoding='utf-8'))
         except (OSError, ValueError):
-            print('本地记录无法读取，未用于自动续接（记录保留）：' + str(path), flush=True)
+            print('Local record unreadable; not used for automatic resume (record kept): ' + str(path), flush=True)
             continue
         if not isinstance(state, dict):
             continue
@@ -132,7 +136,7 @@ def pending(work_root, preferred=None):
         identity = state['identity']
         key = (identity.get('model'), identity.get('serial_sha256') or identity.get('usb_serial_sha256'))
         if not all(key):
-            print('恢复记录缺少机身身份，未用于自动续接（记录保留）：' + str(path), flush=True)
+            print('Restore record has no body identity; not used for automatic resume (record kept): ' + str(path), flush=True)
             continue
         rows.append((path.stat().st_mtime_ns, str(path), key, path.parent.resolve(), state))
     latest = {}
@@ -156,7 +160,7 @@ def pending(work_root, preferred=None):
     if len(active) > 1:
         # Which body is connected is unknown until USB opens; a fresh restore
         # binds to the connected body and re-plans from its current bytes.
-        print('有多台机身的未完成恢复记录（均保留）；本次按当前连接的相机重新生成恢复计划：' +
+        print('Unfinished restore records exist for several bodies (all kept); generating a new restore plan for the currently connected camera: ' +
               '; '.join(str(r[3]) for r in active), flush=True)
         return None
     return (active[0][3], active[0][4]) if active else None
@@ -181,7 +185,7 @@ def known_programs(current, history):
                 if len(image) != build['sizes'][int(chip)] or len(a) != int(size) or len(b) != int(size):
                     raise ValueError('Recovery program layout differs')
                 if image[int(at):int(at) + int(size)] not in (a, b):
-                    raise ValueError('程序窗口包含未确认的字节；保留记录，不能自动重放写入')
+                    raise ValueError('Program windows contain unconfirmed bytes; record kept, writes cannot be replayed automatically')
 
 
 def outcome(raw, result, mode, state, camera, *, allow_completed_name_mount_busy=False):
@@ -256,7 +260,7 @@ def completion_evidence(camera, history, root, state, intent, later):
         boot = raw.decode('ascii', errors='replace').strip() if raw else ''
         if re.fullmatch(r'[0-9a-fA-F]{8}(?:-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}', boot) and boot != old_boot:
             return 'new-camera-boot'
-    raise ValueError('临时文件和结果均缺失，尚无执行完成或新开机证据；不会重新写入，请保留事务记录')
+    raise ValueError('Both the temporary files and the result are missing; there is no evidence of completion or of a new boot. Nothing will be rewritten; keep the transaction record')
 
 
 def cleanup(camera, history, record, save_raw, *, allow_completed_name_mount_busy=False):
@@ -289,7 +293,7 @@ def cleanup(camera, history, record, save_raw, *, allow_completed_name_mount_bus
         names.append('a7c2.probe.result')
     actual = {n: camera.temp_read(n, True) for n in names}
     if actual['libJit.so'] is not None:
-        raise ValueError('执行插件仍存在，不能确认相机端已结束；不会删除或重试')
+        raise ValueError('The execution plugin is still present, so the camera side cannot be confirmed finished; nothing will be deleted or retried')
     if actual[stage] is not None and actual[stage] not in blobs:
         raise ValueError('Temporary worker bytes do not match the recorded transaction')
     if request and actual[request] not in (None, bytes.fromhex(intent['contents_hex'])):
@@ -300,7 +304,7 @@ def cleanup(camera, history, record, save_raw, *, allow_completed_name_mount_bus
     if executed:
         if raw is None:
             if any(value is not None for value in actual.values()):
-                raise ValueError('相机端结果报告缺失，暂时不能确认执行结果；保留临时文件，未重新写入')
+                raise ValueError('The camera-side result report is missing, so the result cannot be confirmed yet; temporary files kept, nothing rewritten')
             proof = completion_evidence(camera, history, root, state, intent, later)
             record('previous_temporary_namespace_empty', previous_workspace=str(root), completion_evidence=proof)
             return

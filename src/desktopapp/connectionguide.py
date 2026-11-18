@@ -1,14 +1,18 @@
 """Connection notice only; importing/showing it never accesses a camera."""
 
-TITLE = '连接相机前，请先了解这条提示'
+TITLE = 'Before connecting the camera, read this notice'
 TEXT = (
-    '使用本工具连接相机或切换驱动时，相机显示“请检查所连接的设备”属于正常现象。\n\n'
-    '此时电脑可能不显示相机盘符。不要仅凭相机这条提示判断连接失败，'
-    '请查看本工具的进度和完整日志；是否成功以工具的实际结果为准。\n\n'
-    'macOS 相机操作会打开「终端」窗口，用 sudo 接管 USB；请在终端中输入 Mac 登录密码。程序不读取或保存密码，'
-    '输入密码前关闭窗口不会开始相机操作；操作开始后请等待完成，不要关机或拔线。\n\n'
-    '请使用海量存储（Mass Storage）模式，并保持 USB 和供电稳定。'
-    '任务执行中不要因这条提示反复拔线、关机或重装驱动。'
-    '只有软件明确提示重新连接，且所有读写已结束后，再按提示操作。\n\n'
-    '如果工具本身报错，请保留并导出诊断包；这条正常连接提示不代表其他报错也可以忽略。'
+    'When this tool connects to the camera or switches drivers, the camera showing '
+    '"Please check the connected device" is normal.\n\n'
+    'The computer may also stop showing the camera drive. Do not treat that camera message alone as a failed connection; '
+    'check this tool\'s progress and full log. Success is decided by the tool\'s actual result.\n\n'
+    'On macOS, camera operations open a Terminal window and use sudo to take over USB; enter your Mac login password '
+    'in Terminal. The program never reads or stores the password. '
+    'Closing the window before entering the password does not start any camera operation; once an operation starts, '
+    'wait for it to finish and do not power off or unplug.\n\n'
+    'Use Mass Storage mode and keep USB and power stable. '
+    'While a task is running, do not unplug, power off or reinstall drivers because of this message. '
+    'Only reconnect when the software explicitly asks you to, and only after all reads and writes have finished.\n\n'
+    'If the tool itself reports an error, keep and export the diagnostic package; this normal connection message '
+    'does not mean other errors can be ignored.'
 )
