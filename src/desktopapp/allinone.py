@@ -23,7 +23,7 @@ def run(arguments, *, dispatch):
     if state and state['phase'] == 'COMPLETE':
         from .completion import archive_error
         if archive_error(state):write_json(path,state)
-        print('本次一键安装已结束，没有重复写入。', flush=True)
+        print('This one-click install has already finished; nothing was written again.', flush=True)
         return state
     if state is None:
         from .presets import resolve
@@ -46,12 +46,12 @@ def run(arguments, *, dispatch):
             archive_error(state)
         state.update(values, phase=phase)
         write_json(path, state)
-        print('一键安装：' + phase, flush=True)
+        print('One-click install: ' + phase, flush=True)
 
     def call(action, values, name):
         step = root / 'steps' / name
         step.mkdir(parents=True, exist_ok=True)
-        print('执行：' + action, flush=True)
+        print('Running: ' + action, flush=True)
         return dispatch(action, values, step)
 
     options = state['options']
@@ -67,10 +67,10 @@ def run(arguments, *, dispatch):
                 and (not options.get('vertical',True) or options.get('vertical_persistent'))
                 and verified and Path(verified).resolve()==install.resolve() and child.is_file()
                 and json.loads(child.read_text(encoding='utf-8')).get('phase') in ('LOADED','COMPLETE')):
-            print('相机安装与重启核对已通过；只继续电脑端插件步骤。',flush=True)
+            print('Camera installation and post-restart verification passed; only the computer-side plug-in step continues.',flush=True)
             save('FINALIZING')
     if state['phase']=='PREPARING_VERTICAL' or (state['phase']=='NEEDS_REVIEW' and state.get('failed_step')=='portrait_frames'):
-        print('重新读取当前竖屏与线框状态，续接本次安装；相同内容不重复写入。',flush=True)
+        print('Rereading the current vertical display and frame state to resume this installation; identical content is not written again.',flush=True)
         save('PREPARED')
     if state['phase'] in ('INSTALLING', 'NEEDS_REVIEW', 'RESUMING_RESOURCES','RESUMING_SETTINGS'):
         child = install / 'direct.private.json'
@@ -105,7 +105,7 @@ def run(arguments, *, dispatch):
             # A version/window conflict can occur while building the host plan,
             # before any camera write. A fixed tool must allow a fresh plan,
             # preserving the failed child and its saved selection.
-            print('上次安装在写入前停止；保留失败记录，使用新版代码重新生成方案，不重装驱动。',flush=True)
+            print('The previous installation stopped before writing; keeping the failure record and generating a new plan with the current code, without reinstalling drivers.',flush=True)
             state.setdefault('failed_install_workspaces',[]).append(str(install))
             install=root/('install-retry-'+uuid.uuid4().hex[:8])
             save('PREPARED',install_workspace=str(install))
@@ -118,12 +118,12 @@ def run(arguments, *, dispatch):
                 from looktool import namespause
                 try:namespause.source(install)
                 except (ValueError,OSError,KeyError):
-                    detail='；原始阶段：%s；原始错误：%s'%(child_state.get('failed_during',child_state.get('phase','未知')),
-                        child_state.get('error','缺少原始错误，请导出包含子事务的新诊断包'))
-                    raise ValueError('上次安装结果需要核对，不会重复刷写。保留本目录并查看完整错误：' + str(root)+detail)
+                    detail='; original stage: %s; original error: %s'%(child_state.get('failed_during',child_state.get('phase','unknown')),
+                        child_state.get('error','original error missing; export a new diagnostic package that includes the child transaction'))
+                    raise ValueError('The previous installation result needs review and will not be flashed again. Keep this folder and check the full error: ' + str(root)+detail)
                 save('RESOURCE_REVIEW_REQUIRED')
             else:
-                print('上次在名称提交前空间不足；先核对现有字节并清理该次已完成的临时报告。',flush=True)
+                print('Last time there was not enough space before the names were committed; verifying existing bytes first and cleaning up that run\'s finished temporary reports.',flush=True)
                 reviewed=call('review_failed_names',dict(workspace=str(install)),'review-'+uuid.uuid4().hex[:6])
                 if not reviewed.get('pre_program_failure_accounted'):raise ValueError('Name failure review did not finish; no retry')
                 state.setdefault('failed_install_workspaces',[]).append(str(install))
@@ -137,17 +137,17 @@ def run(arguments, *, dispatch):
             if str(previous) not in failed:failed.append(str(previous))
             candidate=root/('install-settings-'+uuid.uuid4().hex[:8])
             save('RESUMING_SETTINGS',resume_settings_from=str(previous),install_workspace=str(candidate))
-            print('上次程序与名称已完整读回；核对当前内容后只继续设置，不重装驱动、不重复刷写程序。',flush=True)
+            print('The program and names were fully read back last time; after verifying the current contents only the settings continue, without reinstalling drivers or flashing the program again.',flush=True)
             result=call('direct_resume_settings',dict(common,workspace=str(candidate),failed_workspace=str(previous)),
                         'settings-resume-'+uuid.uuid4().hex[:6])
             install=Path(result['workspace']);state['install_result']=result
             if result['phase']!='AWAITING_RELOAD':raise ValueError('Settings continuation did not reach reload preparation')
             save('WAIT_RELOAD')
             from .reloadguide import text
-            print('所有读写已结束。\n'+text(setup=True),flush=True)
+            print('All reads and writes have finished.\n'+text(setup=True),flush=True)
             return state
         if state['phase'] in ('WAIT_RESOURCE_RELOAD','RESOURCE_REVIEW_REQUIRED'):
-            print('名称已经写好；核对／准备资源重新加载，不重写名称，不重装驱动。',flush=True)
+            print('Names are already written; verifying/preparing the resource reload, without rewriting names or reinstalling drivers.',flush=True)
             previous=install
             candidate=root/('install-continue-'+uuid.uuid4().hex[:8])
             save('RESUMING_RESOURCES',resume_resource_from=str(previous),install_workspace=str(candidate))
@@ -165,7 +165,7 @@ def run(arguments, *, dispatch):
                 # it as a completed program install or enable other features.
                 save('WAIT_RESOURCE_RELOAD',resource_result=result)
                 from .reloadguide import text
-                print('所有读写已结束。\n'+text(setup=True,mode='resource_reload'),flush=True)
+                print('All reads and writes have finished.\n'+text(setup=True,mode='resource_reload'),flush=True)
                 return state
             state['install_result']=result
             state['completed_steps'].append('persistent_features')
@@ -179,7 +179,7 @@ def run(arguments, *, dispatch):
             state['completed_steps'].append('drivers')
             save('PREPARED')
         if state['phase'] == 'DRIVERS':
-            print('上次停在连接准备；本次只测试连接，不重复更换驱动。', flush=True)
+            print('Last time stopped at connection preparation; this time only the connection is tested, without changing drivers again.', flush=True)
             state['driver_result'] = call('connect', {}, 'driver-recheck')
             state['completed_steps'].append('drivers')
             save('PREPARED')
@@ -189,7 +189,7 @@ def run(arguments, *, dispatch):
                 result=call('vertical_enable',dict(common,workspace=str(root/'vertical'),drivers_prepared=True,combined=True),
                             'vertical-frames-'+uuid.uuid4().hex[:6])
                 if result.get('phase') not in ('AWAITING_RELOAD','LOADED','COMPLETE'):
-                    raise ValueError('竖屏线框步骤没有返回已写入／已符合目标状态，请保留日志')
+                    raise ValueError('The vertical frame step did not report a written / already-at-target state; please keep the log')
                 state['portrait_frames_preinstalled']=True
                 state['portrait_frames_result']=result
                 state.pop('failed_step',None)
@@ -200,21 +200,22 @@ def run(arguments, *, dispatch):
             if result['phase']=='AWAITING_RESOURCE_RELOAD':
                 save('WAIT_RESOURCE_RELOAD')
                 from .reloadguide import text
-                print('所有读写已结束。\n'+text(setup=True,mode='resource_reload'),flush=True)
+                print('All reads and writes have finished.\n'+text(setup=True,mode='resource_reload'),flush=True)
                 return state
             state['completed_steps'].append('persistent_features')
             if result['phase'] == 'AWAITING_RELOAD':
                 save('WAIT_RELOAD')
                 from .reloadguide import text
-                print('本次程序／外观写入和完整读回已结束。\n' + text(setup=True), flush=True)
+                print('Program/look writing and full readback for this run have finished.\n' + text(setup=True), flush=True)
                 return state
             save('FINALIZING')
         if state['phase'] == 'WAIT_RELOAD':
-            print('继续已保存的安装计划；先核对新开机，不重新刷写。', flush=True)
+            print('Continuing the saved installation plan; verifying the new power-on first, without flashing again.', flush=True)
             try:
                 result = call('direct_verify', dict(workspace=str(install), accepted=False), 'verify')
             except ValueError as exc:
-                if '冷启动' in str(exc):
+                # Match both the original and the translated backend message.
+                if '冷启动' in str(exc) or 'cold boot' in str(exc).lower():
                     save('WAIT_RELOAD', message=str(exc))
                     print(str(exc), flush=True)
                     return state
@@ -249,16 +250,16 @@ def run(arguments, *, dispatch):
                     result = state.get('verify_result', state.get('install_result', {})).get('vertical_result', {})
                     if not (result.get('persistent') and result.get('loaded_verified') and
                             result.get('saved') == result.get('running') == 'ON' and result.get('alias_count') == 3):
-                        raise ValueError('竖屏持久化加载尚未确认，不以会话临时开启代替完成。请保留日志。')
+                        raise ValueError('Persistent loading of vertical display is not confirmed yet; a temporary session-only enable does not count as complete. Please keep the log.')
                     state['vertical_result'] = result
                 else:
                     # Resume old plans without silently adding a new flash write.
                     state['vertical_result'] = call('vertical_enable', dict(common, workspace=str(root / 'vertical'), session_only=True), 'vertical')
                 state['completed_steps'].append('vertical')
-            message='所选安装已完成；请在机身检查预览、名称、拍摄和回放。'
+            message='The selected installation is complete; check preview, names, shooting and playback on the camera. '
             if options.get('vertical',True):
-                message+=('竖屏已保存开启，并已核对重开后的实际运行状态。' if options.get('vertical_persistent') else
-                    '旧安装的竖屏仅在本次开机开启；可用新版竖屏页保存开启。')
+                message+=('Vertical display is saved as on, and the actual running state after restart was verified.' if options.get('vertical_persistent') else
+                    'With the old installation, vertical display was only on for this power-on; save it as on from the new Vertical Display page.')
             save('COMPLETE', message=message)
             print(state['message'], flush=True)
         return state

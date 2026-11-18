@@ -50,12 +50,12 @@ def launcher(request,uid,gid,environment):
         '# A7C II Tools: one camera operation with administrator rights. Generated per job.',
         'trap '+shlex.quote('echo closed > '+exit_file+'; exit 129')+' HUP',
         "trap '' INT QUIT",
-        "printf '%s\\n' 'A7C II Tools：本次相机操作需要以管理员权限接管 USB。' "
-        "'请在下方输入 Mac 登录密码（输入时不显示）。密码只交给系统 sudo，程序不读取或保存。'",
+        "printf '%s\\n' 'A7C II Tools: this camera operation needs administrator rights to take over USB.' "
+        "'Enter your Mac login password below (it is not shown while typing). The password goes only to the system sudo; the program never reads or stores it.'",
         '/usr/bin/sudo /bin/sh -c '+shlex.quote(shell),
         'code=$?',
         'echo "$code" > '+exit_file,
-        'echo "相机操作已结束（退出码 $code），结果以 A7C II Tools 窗口为准。现在可以关闭此终端窗口。"',
+        'echo "Camera operation finished (exit code $code); the A7C II Tools window shows the actual result. You can close this Terminal window now."',
         ''])
 
 
@@ -99,8 +99,8 @@ def execute(path):
     status=job/'status.private.json'
     write_json(status,dict(phase='WAITING_AUTHORIZATION',action=request['action'],camera_io=False))
     with (job/'worker.log').open('a',encoding='utf-8') as log:
-        log.write('等待在「终端」窗口输入 Mac 登录密码；尚未接管 USB 或开始相机操作。输入密码前关闭终端窗口不会刷写相机。\n')
-    print('请在打开的「终端」窗口中输入 Mac 登录密码（输入时不显示）。',flush=True)
+        log.write('Waiting for the Mac login password in the Terminal window; USB has not been taken over and no camera operation has started. Closing the Terminal window before entering the password does not flash the camera.\n')
+    print('Enter your Mac login password in the Terminal window that opened (it is not shown while typing).',flush=True)
     exit_file=job/'authorization.exit'
     exit_file.unlink(missing_ok=True)
     code=None
@@ -122,14 +122,14 @@ def execute(path):
     extra=job/'authorization.stderr.log'
     if extra.is_file():detail+='\n'+extra.read_text(encoding='utf-8',errors='replace')
     if current.get('phase')=='RUNNING':
-        error='管理员进程意外结束，相机操作结果未知。请导出诊断包，不要重复刚才的操作。'
+        error='The administrator process ended unexpectedly; the camera operation result is unknown. Export a diagnostic package and do not repeat the operation.'
         with (job/'worker.log').open('a',encoding='utf-8') as log:log.write(error+'\n'+detail+'\n')
         write_json(status,dict(phase='FAILED',action=request['action'],error=error,
             error_type='MacWorkerEnded',authorization_denied=False))
         return 2
     cancelled=code in ('closed','1') or 'incorrect password' in detail
-    error=('终端授权未完成（窗口已关闭或密码不正确）；本次相机操作尚未开始，可重新点击原按钮。' if cancelled else
-           '终端授权未完成，相机操作未报告开始。请保留日志；系统详情：'+detail)
+    error=('Terminal authorization was not completed (window closed or wrong password); the camera operation has not started yet, so you can click the same button again.' if cancelled else
+           'Terminal authorization was not completed and the camera operation did not report a start. Keep the log; system details: '+detail)
     with (job/'worker.log').open('a',encoding='utf-8') as log:log.write(error+'\n'+detail+'\n')
     write_json(status,dict(phase='FAILED',action=request['action'],error=error,
         error_type='MacAuthorizationCancelled' if cancelled else 'MacAuthorizationError',
@@ -162,7 +162,7 @@ def return_ownership(request,uid,gid):
 
 def privileged(path,uid,gid):
     if sys.platform!='darwin' or os.geteuid()!=0 or uid<=0 or gid<0:
-        raise RuntimeError('相机授权 worker 必须由终端 sudo 启动。')
+        raise RuntimeError('The camera authorization worker must be started by sudo from Terminal.')
     # Closing the Terminal window or Ctrl-C must not cut a camera write short.
     signal.signal(signal.SIGHUP,signal.SIG_IGN)
     signal.signal(signal.SIGINT,signal.SIG_IGN)
@@ -180,4 +180,4 @@ def privileged(path,uid,gid):
         try:return_ownership(request,uid,gid)
         except Exception:
             with (Path(request['job_dir'])/'worker.log').open('a',encoding='utf-8') as log:
-                log.write('相机任务已结束，但文件所有权交还失败；请保留此日志。\n'+traceback.format_exc())
+                log.write('The camera task finished, but returning file ownership failed; please keep this log.\n'+traceback.format_exc())

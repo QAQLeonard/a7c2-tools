@@ -1,12 +1,12 @@
 """User-visible cold reload steps, shared by the log and completion dialog."""
 
 STEPS = (
-    '仅在软件明确显示“读写已结束”后操作。\n\n'
-    '1. 拔掉相机 USB 数据线，并断开其他外部供电。\n'
-    '2. 等待相机存取灯停止闪烁，不要在灯闪烁时取电池。\n'
-    '3. 将相机电源拨到 OFF，等屏幕和存取灯完全熄灭。\n'
-    '4. 取下电池，让相机同时没有电池、USB 和其他供电，至少等待 1 分钟。\n'
-    '5. 装回电池并开机。'
+    'Only do this after the software clearly shows "all reads and writes have finished".\n\n'
+    '1. Unplug the camera\'s USB cable and disconnect any other external power.\n'
+    '2. Wait for the camera\'s access lamp to stop blinking; never remove the battery while it blinks.\n'
+    '3. Switch the camera power to OFF and wait until the screen and access lamp are completely dark.\n'
+    '4. Remove the battery so the camera has no battery, USB or other power at all, and wait at least 1 minute.\n'
+    '5. Reinsert the battery and power on.'
 )
 
 WAITING_PHASES = {'WAIT_RELOAD', 'AWAITING_RELOAD', 'RESTORED_AWAITING_RELOAD',
@@ -34,62 +34,62 @@ def sound_notice(action,result):
     """Temporary audition needs guidance while the current power stays on."""
     phase=result.get('phase')
     if action=='sound_audition' and phase=='temporary_pcm_registered_cold_reload_required_after_test':
-        return dict(title='试听已准备好，请保持相机开机',
-            status='试听已准备好。拔 USB 并保持开机，试拍后接回即可直接保存。',
-            text='相机读写已结束。当前声音只供临时试听，尚未永久保存。\n\n'
-                 '1. 拔掉 USB，保持相机开机；不要关机、取下电池或更改音频信号设置。\n'
-                 '2. 使用电子快门拍一张，检查声音内容、音量、音调／速度，以及拍摄和回放是否正常。\n'
-                 '3. 接回 USB 海量存储，点击“保存当前自定义声音”。可以直接保存，无需先恢复原声。\n'
-                 '4. 保存写入完成后，再按弹窗完整断电重开，检查是否永久生效。\n\n'
-                 '“确认试听正确”只记录试听结果，是可选步骤。\n'
-                 '本弹窗的“确定”只关闭说明，不代表已确认试听正确。')
+        return dict(title='Audition ready — keep the camera on',
+            status='Audition ready. Unplug USB and keep the camera on; after a test shot, reconnect and save directly.',
+            text='Camera reads and writes have finished. The current sound is a temporary audition only and is not saved permanently yet.\n\n'
+                 '1. Unplug USB and keep the camera on; do not power off, remove the battery or change the Audio signals setting.\n'
+                 '2. Take a shot with the electronic shutter and check the sound itself, volume, pitch/speed, and that shooting and playback work.\n'
+                 '3. Reconnect USB in Mass Storage mode and click "Save current custom sound". You can save directly without restoring the original sound first.\n'
+                 '4. After the save has been written, power-cycle completely as the dialog describes and check that it took effect permanently.\n\n'
+                 '"Confirm audition is correct" only records the audition result and is optional.\n'
+                 'OK in this dialog only closes the instructions; it does not confirm the audition.')
     if action=='sound_confirm' and phase in ('owner_confirmed_audio_cold_reload_required',
             'owner_audio_failed_cold_reload_required','owner_requested_gain_adjustment_cold_reload_required'):
-        return dict(title='试听结果已记录',status='试听记录已保存；可直接保存当前自定义声音，无需先断电恢复。',
-                    text='这一步只记录试听结果。\n\n可直接点击“保存当前自定义声音”，无需先断电或记录恢复。'
-                    '若不满意，调整片段后重新转换；需要清除临时试听时，再按断电步骤恢复原声。')
+        return dict(title='Audition result recorded',status='Audition record saved; you can save the current custom sound directly without power-cycling first.',
+                    text='This step only records the audition result.\n\nYou can click "Save current custom sound" directly, without power-cycling or recording a restore first. '
+                    'If you are not satisfied, adjust the clip and convert again; to clear the temporary audition, follow the power-cycle steps to restore the original sound.')
     if action!='sound_install':return None
     if phase=='sound_conversion_required':
-        return dict(title='保存尚未开始，请先转换片段',status='等待操作：选择声音文件，转换后即可直接保存。',
-                    text='尚无可保存的转换片段，本次没有相机写入。\n\n选择音频或视频，设置起点和长度，'
-                    '点击“转换所选片段”；转换成功后直接点击“保存当前自定义声音”。试听是可选步骤。')
+        return dict(title='Save not started — convert a clip first',status='Waiting: choose a sound file; once converted it can be saved directly.',
+                    text='There is no converted clip to save; nothing was written to the camera.\n\nChoose an audio or video file, set the start and length, '
+                    'then click "Convert selected clip"; after a successful conversion click "Save current custom sound". The audition is optional.')
     return None
 
 
 def text(*, setup=False, mode=None):
     if mode=='factory_prewrite_temporary':
-        return ('本次恢复尚未开始写入，连接操作已结束。相机里有同名临时工作文件，'
-                '无法仅凭文件名确定它由哪次操作留下；本次没有覆盖它，也没有标记恢复完成。\n\n'
-                '先完整断电，让临时服务状态退出，再重新读取当前相机并生成恢复计划。\n\n'+STEPS+
-                '\n\n下一步：接回 USB 海量存储，点击恢复页“断电后重试恢复（本次尚未写入）”。'
-                '工具会重新读取当前程序、设置和名称，从现况恢复原厂功能，不需要旧 LUT 任务。'
-                '如果仍提示临时文件冲突，请导出新的诊断包；不要手动删除相机文件。'
-                '\n\n这是恢复写入前的重试步骤，不是“恢复完成”或“重启后核对”。')
+        return ('This restore has not started writing yet, and the connection has ended. The camera holds a temporary work file with the same name, '
+                'and the file name alone cannot tell which operation left it; it was not overwritten and the restore was not marked complete.\n\n'
+                'First power-cycle completely so the temporary service state exits, then the current camera will be read again and a new restore plan generated.\n\n'+STEPS+
+                '\n\nNext: reconnect USB in Mass Storage mode and click "Retry restore after power cycle (nothing written yet)" on the restore page. '
+                'The tool rereads the current program, settings and names and restores factory functions from the current state; no old LUT task is needed. '
+                'If a temporary file conflict is still reported, export a new diagnostic package; do not delete camera files by hand.'
+                '\n\nThis is a retry step before any restore write, not "restore complete" or "verify after restart".')
     if mode=='factory_reset':
-        return ('恢复尚未完成：本次写入和完整读回已结束，还必须重启后核对相机实际加载状态。\n\n'+STEPS+
-                '\n\n下一步：确认相机能正常取景，接回 USB 海量存储，点击恢复页上方'
-                '“重启后核对并完成恢复”，或下方“重启后核对并完成恢复（恢复写入后必做）”。\n\n'
-                '只有核对通过才显示恢复完成。核对失败时保留日志，不要把写入结束当成恢复完成。'
-                '弹窗“确定”只关闭说明，不会自动完成核对。')
+        return ('Restore not finished yet: writing and full readback have ended, but the camera\'s actual loaded state must still be verified after a restart.\n\n'+STEPS+
+                '\n\nNext: confirm the camera shows a normal live view, reconnect USB in Mass Storage mode, and click '
+                '"Verify after restart and finish restore" at the top of the restore page, or "Verify after restart and finish restore (required after a restore write)" below.\n\n'
+                'Restore is shown as complete only after verification passes. If verification fails, keep the log; do not treat the end of writing as a completed restore. '
+                'OK in the dialog only closes the instructions; it does not complete verification.')
     if mode=='resource_reload':
-        return ('名称阶段已完成，程序尚未写入。旧资源仍被相机占用，只读挂载尚未恢复；需要先释放旧资源，再继续剩余安装。\n\n'+STEPS+
-            '\n\n开机后先不用拍照。接回 USB 海量存储，再点'+('首页“继续安装”' if setup else '自定义外观页“继续槽位更改”')+
-            '。工具会核对新的冷启动和只读挂载，然后继续剩余程序，不重复写名称、不重装驱动。\n\n程序写完后还会提示最终重开，让新功能生效。点确定只关闭说明。')
-    reason = ('\n\n这次“启用 FL2／FL3”已写入程序文件。此前恢复原厂后的重开只加载了原厂状态；本次新的修改需要再次重开才能生效。'
+        return ('The name stage is complete; the program has not been written yet. The camera still holds the old resources and the read-only mount has not been restored; the old resources must be released before the rest of the installation continues.\n\n'+STEPS+
+            '\n\nNo need to take photos after powering on. Reconnect USB in Mass Storage mode, then click '+('"Continue installation" on the Home page' if setup else '"Continue slot changes" on the Custom Creative Looks page')+
+            '. The tool verifies the new cold boot and read-only mount, then continues with the remaining program, without rewriting names or reinstalling drivers.\n\nAfter the program is written you will be asked for a final restart so the new functions take effect. OK only closes the instructions.')
+    reason = ('\n\n"Enable FL2/FL3" has now been written to the program file. The restart after the earlier factory restore only loaded the factory state; this new change needs another restart to take effect.'
               if mode == 'fl23_enable' else '')
-    follow = ('接回 USB，选择海量存储，再点首页“继续安装”。工具先核对加载，不重复刷写。'
-              if setup else '在相机中确认 FL2／FL3 能选择、拍摄及回放，即可使用。不必再接电脑点击核对；如需排查，可使用 FL23 页的可选诊断。'
+    follow = ('Reconnect USB, select Mass Storage, then click "Continue installation" on the Home page. The tool verifies loading first and does not flash again.'
+              if setup else 'On the camera, confirm that FL2/FL3 can be selected, shot and played back, and it is ready to use. No need to reconnect the computer to verify; for troubleshooting, use the optional diagnostic on the FL2 / FL3 page.'
               if mode in ('fl23_enable', 'fl23_disable') else
-              '此次断电仅用于清除临时试听、恢复原声，不是保存声音的前置条件。开机确认原声、拍摄及回放正常，可点声音页“已断电恢复原声，记录恢复完成”。保存当前转换片段不需要先执行这一步。'
+              'This power cycle only clears the temporary audition and restores the original sound; it is not a prerequisite for saving a sound. After powering on, confirm the original sound, shooting and playback are normal, then you can click "Power-cycled to restore original sound; record restore complete" on the sound page. Saving the current converted clip does not require this step.'
               if mode == 'sound_confirm' else
-              '开机后用电子快门拍摄，检查声音、音量及拍摄／回放。保存自定义声音后，可在声音页核对加载状态。'
+              'After powering on, shoot with the electronic shutter and check the sound, volume and shooting/playback. After saving a custom sound, you can verify its loaded state on the sound page.'
               if mode and mode.startswith('sound_') else
-              '竖屏开关和线框引用已保存。重开后先横握检查 Fn 网格和右移选择，再分别左右竖握检查 Fn、创意外观等子菜单边框；最后检查拍摄和回放。已知问题：竖屏创意外观选择页的外框仍偏粗；刻度已横向显示，但橙色指针朝向尚未修正。'
+              'The vertical display switch and frame references have been saved. After restarting, first hold the camera horizontally and check the Fn grid and moving the selection right, then hold it vertically to each side and check the frames of Fn, Creative Look and other submenus; finally check shooting and playback. Known issues: in vertical orientation the outer frame of the Creative Look selection page is still too thick; the scale is now shown horizontally, but the orange pointer direction is not fixed yet.'
               if mode == 'vertical_enable' else
-              '竖屏已先关闭，原线框引用与资源索引已恢复，辅助别名已移除。如果当前运行仍引用追加图片，会暂时保留少量图片尾部数据，避免破坏当前显示；这不影响关闭效果，也不需要再点按钮。重开后确认横握／竖握显示及拍摄正常。'
+              'Vertical display was turned off first, the original frame references and resource index were restored, and helper aliases were removed. If the running firmware still references appended images, a small amount of image tail data is kept for now to avoid breaking the current display; this does not affect turning it off and needs no further clicks. After restarting, confirm horizontal/vertical display and shooting are normal.'
               if mode == 'vertical_disable' else
-              '在 ST 与修改的槽位间随机切换，确认实时预览立即更新，再拍照并回放。单独外观写入无需接电脑另点核对；若名称阶段提示尚未写程序，请接回并点“继续槽位更改”。'
+              'Switch between ST and the changed slots in random order and confirm the live preview updates immediately, then take photos and play them back. A look-only write needs no separate verification from the computer; if the name stage reports that the program is not written yet, reconnect and click "Continue slot changes".'
               if mode in ('install_all','look_import','slot_default') else
-              '确认能正常取景，检查菜单／外观预览，并拍照、回放。若本页显示待核对，请接回 USB 后点击该页明确列出的核对按钮。')
-    check_note='加载核对只读取状态，不会再刷一次。' if setup or (mode and mode.startswith('sound_')) else ''
-    return STEPS + reason + '\n\n下一步：' + follow + '\n\n' + check_note + '点“确定”只关闭说明，不会自动断电或代替你确认测试。'
+              'Confirm a normal live view, check the menu/look preview, and take photos and play them back. If this page shows a pending verification, reconnect USB and click the verify button listed on that page.')
+    check_note='The load verification only reads state; it does not flash again. ' if setup or (mode and mode.startswith('sound_')) else ''
+    return STEPS + reason + '\n\nNext: ' + follow + '\n\n' + check_note + 'Clicking OK only closes the instructions; it does not power off the camera or confirm the tests for you.'

@@ -220,18 +220,18 @@ class DirectJob(Rollback):
         self.state.update(values, phase=phase)
         write_json(self.state_path, self.state)
         restoring = self.state.get('mode') == 'factory_reset'
-        labels = {'READING': '读取当前状态', 'PLANNED': '恢复计划已生成' if restoring else '所选操作的写入计划已生成',
-                  'RESTORING_NAMES': '恢复并核对名称资源' if restoring else '核对名称资源',
-                  'RESTORING_SETTINGS': '恢复原厂外观设置' if restoring else '应用并核对所选设置',
-                  'PREPARING_RELOAD': '准备重新加载', 'PREFLIGHT_VERIFIED': '写入前检查通过，接下来应用更改',
-                  'WRITING': '正在应用所选操作', 'AWAITING_RELOAD': '读回完成，等待断电重开',
-                  'LOADED': '加载状态符合目标', 'COMPLETE': '完成', 'NEEDS_REVIEW': '已停止，请保留日志核对结果'}
-        labels.update(AWAITING_RESOURCE_RELOAD='名称已写好；请按提示断电重开，再继续程序安装',
-                      RESOURCE_RELOAD_VERIFIED='名称及只读挂载已确认，可以继续程序安装')
+        labels = {'READING': 'Reading current state', 'PLANNED': 'Restore plan generated' if restoring else 'Write plan for the selected operation generated',
+                  'RESTORING_NAMES': 'Restoring and verifying name resources' if restoring else 'Verifying name resources',
+                  'RESTORING_SETTINGS': 'Restoring factory look settings' if restoring else 'Applying and verifying the selected settings',
+                  'PREPARING_RELOAD': 'Preparing reload', 'PREFLIGHT_VERIFIED': 'Pre-write check passed; applying changes next',
+                  'WRITING': 'Applying the selected operation', 'AWAITING_RELOAD': 'Readback complete; waiting for a power cycle',
+                  'LOADED': 'Loaded state matches the target', 'COMPLETE': 'Done', 'NEEDS_REVIEW': 'Stopped; keep the log and review the result'}
+        labels.update(AWAITING_RESOURCE_RELOAD='Names written; power-cycle as prompted, then continue the program install',
+                      RESOURCE_RELOAD_VERIFIED='Names and read-only mount confirmed; the program install can continue')
         if phase=='AWAITING_RELOAD' and self.state.get('mode') in ('fl23_enable','fl23_disable'):
-            labels[phase] = 'FL23 操作完成：已写入并完整读回；重开后生效，无需再点核对。'
+            labels[phase] = 'FL23 operation complete: written and fully read back; takes effect after restart, no need to click verify.'
         elif phase=='AWAITING_RELOAD' and restoring:
-            labels[phase]='恢复尚未完成：写入与读回已结束，等待重启后核对'
+            labels[phase]='Restore not finished yet: writing and readback are done; waiting for verification after restart'
         print(labels.get(phase, phase), flush=True)
 
     def settings(self, camera, before, wanted):
@@ -291,7 +291,7 @@ class DirectJob(Rollback):
         result = self.native(camera, 'purge', 5, build)
         self.record('stale_name_backups_removed', matched=result['matched'], removed=result['removed'])
         if result['removed']:
-            print('已清理旧任务遗留的名称备份 %d 个，释放相机 /usr 空间。' % result['removed'], flush=True)
+            print('Removed %d name backups left by an old job, freeing camera /usr space.' % result['removed'], flush=True)
         return result
 
     def resume_install_settings(self,failed_workspace,*,power_confirmed):
@@ -340,7 +340,7 @@ class DirectJob(Rollback):
                 if runtime['image_mode'].strip()=='2':
                     self.native(camera,'wbi',0);self.native(camera,'wbi',1)
             self.save('AWAITING_RELOAD',raw_profile_effective_since=datetime.now().isoformat(timespec='microseconds'))
-            print('已核对程序和名称均符合原安装计划，只续做设置与重新加载准备；没有重复刷写程序。',flush=True)
+            print('Programs and names verified against the original install plan; only continuing settings and reload preparation. Programs were not flashed again.',flush=True)
             return self.state
         except BaseException as exc:
             self.save('NEEDS_REVIEW',error=str(exc));raise
@@ -359,7 +359,7 @@ class DirectJob(Rollback):
         keys=[key for key in prepared[0] if key not in (*checkpoint.AP_KEYS,SETTING)]
         if not keys:return prepared
         result=self.prepare_ap_settings(camera,prepared,keys,'look_slots_st')
-        print('所选槽位已保存为 ST。',flush=True)
+        print('Selected slot saved as ST.',flush=True)
         return result
 
     def prepare_ap_settings(self, camera, prepared, selected, event):
@@ -430,7 +430,7 @@ class DirectJob(Rollback):
                 if names:
                     self.native(camera, 'names', 4, names)
                 self.save('PREFLIGHT_VERIFIED', program_builds=[], inverse_name_build=names, forward_name_build=None)
-                print('只继续名称、设置与重新加载准备，不重复写入程序。', flush=True)
+                print('Only continuing names, settings and reload preparation; programs are not written again.', flush=True)
                 self.save('WRITING')
                 prepared=self.prepare_factory_settings(camera,prepared)
                 if names:
@@ -441,7 +441,7 @@ class DirectJob(Rollback):
                     self.native(camera, 'wbi', 0)
                     self.native(camera, 'wbi', 1)
             self.save('AWAITING_RELOAD')
-            print('续接写入和读回已结束，恢复尚未完成：请拔 USB 和其他外部供电，等存取灯停止闪烁，再正常关机并等屏幕和灯完全熄灭；取下电池至少一分钟，再装回开机、接回 USB，点击“重启后核对并完成恢复”。', flush=True)
+            print('Resumed writing and readback are done, but the restore is not finished yet: unplug USB and any other external power, wait for the access light to stop blinking, then shut down normally and wait until the screen and lights are completely off; remove the battery for at least one minute, then reinsert it and power on, reconnect USB and click "Verify after restart and finish restore".', flush=True)
             return self.state
         except BaseException as exc:
             self.save('NEEDS_REVIEW', error=str(exc))
@@ -535,8 +535,8 @@ class DirectJob(Rollback):
                         allowed.add(target['appFw.so'][span['offset']:span['offset'] + span['length']].hex())
                     if span['memory'] not in allowed or span['disk'] != expected:
                         if mode == 'factory_reset':
-                            raise ValueError('相机仍在运行上次写入前加载的程序，本次没有写入。请先拔 USB、关机，取下电池至少一分钟，'
-                                             '再开机接回 USB，点击“重启后核对并完成恢复”或再次点击恢复。')
+                            raise ValueError('The camera is still running the programs loaded before the last write; nothing was written this time. First unplug USB, power off, remove the battery for at least one minute, '
+                                             'then power on, reconnect USB and click "Verify after restart and finish restore" or click restore again.')
                         raise ValueError('Finish the previous cold reload before changing another feature')
                 for build in programs:
                     self.native(camera, 'program', 0, build)
@@ -555,8 +555,8 @@ class DirectJob(Rollback):
                 # Finish the resource transaction before any program edits;
                 # ENOSPC here must leave the previous program executable.
                 if forward and not forward.get('unchanged'):
-                    print('正在逐文件更新名称（共 %d 项）；名称完成后才写入程序。' % forward['count'] if forward.get('stream_install') else
-                          '先写入名称资源，成功后才写入程序。', flush=True)
+                    print('Updating names file by file (%d items); programs are written only after the names are done.' % forward['count'] if forward.get('stream_install') else
+                          'Writing name resources first; programs are written only after that succeeds.', flush=True)
                     name_result=self.forward_names(camera, forward, 1)
                     self.state['names_cleanup_pending'] = not forward.get('stream_install',False)
                     self.save('WRITING')
@@ -573,7 +573,7 @@ class DirectJob(Rollback):
                     if mode in ('look_import','install_all','slot_default'):
                         prepared=self.prepare_look_settings(camera,prepared)
                     for index, build in enumerate(programs):
-                        print('正在写入程序窗口批次 %d/%d' % (index + 1, len(programs)), flush=True)
+                        print('Writing program window batch %d/%d' % (index + 1, len(programs)), flush=True)
                         self.native(camera, 'program', 1, build)
                     for program, path in checkpoint.PROGRAM_PATHS.items():
                         if camera.read(path) != target[program]:
@@ -584,7 +584,7 @@ class DirectJob(Rollback):
                         name_result = self.native(camera, 'names', 2, inverse_names)
                         if name_result and name_result.get('readonly_deferred_busy'):
                             self.state['readonly_deferred_busy'] = True
-                            print('名称内容已完成；只读挂载忙碌。完成设置与重新加载准备后，需要断电重开核对挂载状态。', flush=True)
+                            print('Name content complete; the read-only remount is busy. After settings and reload preparation, power-cycle and verify the mount state.', flush=True)
                     self.readback(camera, target)
                     self.save('RESTORING_SETTINGS')
                     self.restore_settings(camera, prepared)
@@ -598,12 +598,12 @@ class DirectJob(Rollback):
                         self.state['readonly_after_reload_verified']=True
             if resource_pause:
                 self.save('AWAITING_RESOURCE_RELOAD')
-                print('所有读写已结束。68 个名称已完整核对，程序和配方尚未写入。旧资源仍被占用，需要断电重开释放后，再点同一按钮继续；不重复写名称。',flush=True)
+                print('All reads and writes have finished. All 68 names fully verified; programs and recipes not written yet. Old resources are still held; power-cycle to release them, then click the same button to continue. Names will not be written again.',flush=True)
                 return self.state
             self.save('AWAITING_RELOAD' if changed else 'LOADED', raw_profile_effective_since=datetime.now().isoformat(timespec='microseconds'))
             if changed and mode in ('fl23_enable','fl23_disable'):
-                print('安装／关闭任务已结束，没有后续待写入步骤。以下断电仅用于让相机加载已写入的程序，电脑端核对可选。',flush=True)
-            print('所有读写已结束。拔 USB 和其他外部供电，等存取灯停止闪烁，再正常关机并等屏幕和灯完全熄灭；取下电池至少一分钟，再装回开机、检查功能并核对。' if changed else '磁盘与设置已符合目标，本次没有重复写入；实际预览、照片和声音仍需在机身检查。', flush=True)
+                print('Install/disable job finished; no further write steps remain. The power cycle below only lets the camera load the written programs; verification from the computer is optional.',flush=True)
+            print('All reads and writes have finished. Unplug USB and any other external power, wait for the access light to stop blinking, then shut down normally and wait until the screen and lights are completely off; remove the battery for at least one minute, then reinsert it and power on, check the features and verify.' if changed else 'Disk and settings already match the target; nothing was written again. Live view, photos and sound still need checking on the camera.', flush=True)
             return self.state
         except BaseException as exc:
             self.save('NEEDS_REVIEW', error=str(exc))
@@ -639,7 +639,7 @@ class DirectJob(Rollback):
                 elif runtime['image_mode'].strip() not in ('0','2'):raise ValueError('Unknown retained image state')
             self.save('RESOURCE_RELOAD_VERIFIED' if ready else namespause.WAIT,
                 resource_reload_not_needed=ready,resource_reload_verified=ready)
-            print('所有读写已结束。名称已核对，程序未写入。'+('只读挂载已恢复，无需额外重开。' if ready else '请按弹窗断电重开后接回，继续剩余程序安装。'),flush=True)
+            print('All reads and writes have finished. Names verified; programs not written. '+('Read-only mount restored; no extra restart needed.' if ready else 'Power-cycle as the pop-up describes, reconnect, then continue the remaining program install.'),flush=True)
             return self.state
         except BaseException as exc:
             self.save('NEEDS_REVIEW',error=str(exc));raise
@@ -654,7 +654,7 @@ class DirectJob(Rollback):
             ready=(runtime.get('usr_mount_readonly') is True and
                 (self.state.get('resource_reload_not_needed') or runtime['boot_id'].strip()!=self.state.get('source_boot_id')))
         if not ready:
-            print('尚未确认新的冷启动与只读挂载；没有重复写入。请按弹窗完成断电重开、接回。',flush=True)
+            print('A new cold boot and read-only mount are not confirmed yet; nothing was written again. Power-cycle and reconnect as the pop-up describes.',flush=True)
             return self.state
         self.save('RESOURCE_RELOAD_VERIFIED',resource_reload_verified=True,resource_boot_id=runtime['boot_id'].strip())
         return self.state
@@ -666,7 +666,7 @@ class DirectJob(Rollback):
         history = factoryrecover.chain(failed_workspace)
         prior_root, prior = history[-1]
         if prior['phase'] in factoryrecover.FINISHED:
-            raise ValueError('恢复写入已结束，请核对重新加载状态，不重复写入')
+            raise ValueError('Restore writing has finished; verify the reload state, do not write again')
         if self.root.exists() and any(self.root.iterdir()):
             raise ValueError('Use a new continuation directory; keep earlier evidence')
         self.root.mkdir(parents=True, exist_ok=True)
@@ -694,12 +694,12 @@ class DirectJob(Rollback):
                     allow_completed_name_mount_busy=content_complete) or {}
                 if recovered.get('readonly_deferred_busy'):
                     self.state['readonly_deferred_busy'] = True
-                    print('已完整读回确认程序与名称均符合原厂目标；只继续设置和重新加载准备，只读挂载将在新开机后核对。', flush=True)
+                    print('Full readback confirms programs and names match the factory target; only continuing settings and reload preparation. The read-only mount will be verified after the next boot.', flush=True)
                 factoryrecover.supersede_temporary(camera,self.root/'evidence/superseded-temporary',self.record)
                 runtime = self.native(camera, 'runtime', 0)
                 self.prepare_vertical(camera)
                 if runtime['image_mode'].strip() not in ('0', '2') or not runtime.get('boot_id', '').strip():
-                    raise ValueError('无法确认当前加载状态；尚未开始续接写入')
+                    raise ValueError('Cannot confirm the current loaded state; resumed writing has not started')
                 earlier = [r['result']['spans'] for _, state in history for r in state.get('journal', [])
                     if r.get('event') == 'native_result_verified' and 'spans' in r.get('result', {})]
                 for span in runtime['spans']:
@@ -707,7 +707,7 @@ class DirectJob(Rollback):
                     allowed = {s['memory'] for spans in earlier for s in spans if s['offset'] == at and s['length'] == size}
                     allowed.add(target['appFw.so'][at:at + size].hex())
                     if span['disk'] != current['appFw.so'][at:at + size].hex() or span['memory'] not in allowed:
-                        raise ValueError('运行中程序与已记录的原状态／目标不符；保留日志，不自动重试')
+                        raise ValueError('Running programs match neither the recorded original state nor the target; keep the log, no automatic retry')
                 self.state['source_boot_id'] = runtime['boot_id'].strip()
                 for build in programs:
                     self.native(camera, 'program', 0, build)
@@ -715,7 +715,7 @@ class DirectJob(Rollback):
                 if names:
                     self.native(camera, 'names', 4, names)
                 self.save('PREFLIGHT_VERIFIED')
-                print('续接计划：剩余程序批次 %d，剩余名称文件 %d；已符合目标的内容不重复写入。' %
+                print('Resume plan: %d program batches and %d name files remain; content that already matches the target is not written again.' %
                       (len(programs), names['count'] if names else 0), flush=True)
                 self.save('WRITING')
                 prepared=self.prepare_factory_settings(camera,prepared)
@@ -730,7 +730,7 @@ class DirectJob(Rollback):
                     name_result = self.native(camera, 'names', 2, names)
                     if name_result and name_result.get('readonly_deferred_busy'):
                         self.state['readonly_deferred_busy'] = True
-                        print('名称内容已完成；只读挂载忙碌，待完成设置后断电重开核对。', flush=True)
+                        print('Name content complete; the read-only remount is busy. Power-cycle and verify after the settings are done.', flush=True)
                 self.readback(camera, target)
                 self.save('RESTORING_SETTINGS')
                 self.restore_settings(camera, prepared)
@@ -739,7 +739,7 @@ class DirectJob(Rollback):
                     self.native(camera, 'wbi', 0)
                     self.native(camera, 'wbi', 1)
             self.save('AWAITING_RELOAD')
-            print('恢复完成，所有读写已结束。拔 USB 和其他外部供电，等存取灯停止闪烁，再正常关机并等屏幕和灯完全熄灭；取下电池至少一分钟，再装回开机、检查并核对。', flush=True)
+            print('Restore writes complete; all reads and writes have finished. Unplug USB and any other external power, wait for the access light to stop blinking, then shut down normally and wait until the screen and lights are completely off; remove the battery for at least one minute, then reinsert it and power on, check and verify.', flush=True)
             return self.state
         except BaseException as exc:
             self.save('NEEDS_REVIEW', error=str(exc))
@@ -801,20 +801,20 @@ class DirectJob(Rollback):
             runtime = self.native(camera, 'runtime', 0)
             if self.state['mode'] == 'factory_reset':
                 if runtime.get('usr_mount_readonly') is not True:
-                    raise ValueError('原厂恢复后的 /usr 只读挂载尚未确认；不标记恢复完成，请保留日志')
+                    raise ValueError('The /usr read-only mount after factory restore is not confirmed yet; the restore is not marked complete. Keep the log')
                 self.state['readonly_after_reload_verified'] = True
             if self.state['phase'] == 'AWAITING_RELOAD':
                 before_boot = self.state.get('source_boot_id')
                 current_boot = runtime.get('boot_id', '').strip()
                 if not before_boot or not current_boot or before_boot == current_boot:
-                    raise ValueError('尚未确认新的冷启动。完成断电重开后再核对，不要重复写入。')
+                    raise ValueError('A new cold boot is not confirmed yet. Power-cycle, then verify; do not write again.')
             for span in runtime['spans']:
                 expected = target['appFw.so'][span['offset']:span['offset'] + span['length']].hex()
                 if span['memory'] != expected or span['disk'] != expected:
                     raise ValueError('Old application remains loaded; complete the cold restart')
             if self.state.get('names_cleanup_pending'):
                 if runtime.get('usr_mount_readonly') is not True:
-                    raise ValueError('名称写入已完成，但尚未确认新开机后的只读挂载；不清理旧资源')
+                    raise ValueError('Name writing is complete, but the read-only mount after the next boot is not confirmed yet; old resources are not cleaned up')
                 old = self.state['forward_name_build']
                 actual = {n: current['resources/' + n] for n in nameworker.filenames()}
                 build = nameworker.prepare_cleanup(old, self.root / 'names/names.private.h', actual,

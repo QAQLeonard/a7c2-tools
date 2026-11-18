@@ -193,7 +193,7 @@ def replace_completed_marker(camera, root, previous_jobs):
             raise ValueError('Known prior sound marker replacement did not complete')
         return dict(completed_prior_marker_replaced=True,previous_job=str(path),
                     previous_cp_handle_released=False,camera_firmware_written=False)
-    raise ValueError('现有声音标记无法对应到已完成的试听报告，已保存原标记；未覆盖未知运行任务。')
+    raise ValueError('The existing sound marker does not match any completed audition report; the original marker was saved and the unknown running job was not overwritten.')
 
 
 def retire_recovered_marker(camera, root, previous_job):
@@ -253,10 +253,10 @@ def run(root, original_job, zig=None, *, payload=None, register=False, wire_form
             ap = camera.read('/usr/lib/appFw.so')
             cp = camera.read('/cp/cpapp-b.bin')
             if cp[candidate.OFFSET:candidate.OFFSET+2]==candidate.BEFORE:
-                raise ValueError('当前相机的电子快门声音尚未开启，请先开启；本次没有注册试听声音。')
+                raise ValueError('The electronic shutter sound is not enabled on this camera yet; enable it first. No audition sound was registered.')
             candidate.guard(ap, cp, installed=True)
             if register and not candidate.is_current(cp):
-                raise ValueError('请重新开启电子快门声以更新机械快门过滤，再进行试听；本次未注册声音。')
+                raise ValueError('Enable the electronic shutter sound again to update the mechanical-shutter filter, then audition; no sound was registered.')
             worker = build(ap, root / 'build', zig, payload=payload, register=register, wire_format=wire_format, lease_token=token)
             camera.programs_pinned = True
             if register and replace_jobs and recovered_job is None:

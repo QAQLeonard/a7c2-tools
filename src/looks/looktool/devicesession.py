@@ -45,7 +45,7 @@ class Camera:
             if sys.platform=='darwin':
                 # The camera may be showing its USB mode menu; MDHan waits 60 s.
                 from macos_host import MSC_PROMPT,NORMAL_RETURN_SECONDS
-                print('等待相机普通 USB 连接（最多 %d 秒）。'%NORMAL_RETURN_SECONDS+MSC_PROMPT,flush=True)
+                print('Waiting for the normal camera USB connection (up to %d seconds). '%NORMAL_RETURN_SECONDS+MSC_PROMPT,flush=True)
                 wait=NORMAL_RETURN_SECONDS
             deadline=time.monotonic()+wait
             while detected is None and time.monotonic()<deadline:
@@ -70,14 +70,14 @@ class Camera:
                 self.link=open_service(transport);self.identity_pending=True
         else:
             if self.allow_service_resume and self.expected and self.expected.get('model')==self.core.MODEL:
-                print('普通 USB 身份未出现；只读取已有服务会话的机身序列，核对后续接，不重复认证。',flush=True)
+                print('Normal USB identity did not appear; reading only the body serial from the existing service session, verifying it and continuing without re-authenticating.',flush=True)
                 self.link=transport.RecoverySession(self.expected);self.link.__enter__()
                 self.identity=dict(self.link.identity,identification_method='recorded-body-existing-service')
                 self.service_only=False
                 return self
-            raise ValueError('相机没有以普通“海量存储”身份连接（可能仍停在上次的服务模式 054C:0336）。'
-                             '请拔掉 USB、关机并取出电池约 1 分钟，再开机选择海量存储、接回 USB 后重试；本次没有写入相机。'
-                             '（Normal Mass Storage USB serial is required for body binding）')
+            raise ValueError('The camera is not connected with the normal "Mass Storage" identity (it may still be in the previous service mode, 054C:0336). '
+                             'Unplug USB, power off and remove the battery for about 1 minute, then power on, choose Mass Storage, reconnect USB and retry; nothing was written to the camera. '
+                             '(Normal Mass Storage USB serial is required for body binding)')
         try:
             self.identity=dict(self.link.identity,usb_serial_sha256=usb_serial)
             if self.identity_pending and self.expected and self.expected.get('model')==self.core.MODEL:
@@ -102,7 +102,7 @@ class Camera:
         try:return self.link.read('/tmp/jiritsu/../../'+path.lstrip('/'),missing)
         except BaseException:
             # Name the file; a channel error is otherwise reported generically.
-            print('读取相机文件时 USB 通信出错：'+path,flush=True)
+            print('USB communication error while reading a camera file: '+path,flush=True)
             raise
     def temp_read(self,name,missing=False):
         if name not in TEMP_NAMES:raise ValueError('Unowned temporary name')
@@ -153,7 +153,7 @@ def clear_stale_probe(camera,record):
     if camera.temp_read(probe,True)!=raw:raise ValueError('Temporary state changed during cleanup: '+probe)
     camera.temp_remove(probe)
     if camera.temp_read(probe,True) is not None:raise ValueError('Temporary cleanup incomplete: '+probe)
-    print('已清理上次只读检测留下的报告（不影响相机内容），继续本次操作。',flush=True)
+    print('Cleaned up the report left by the previous read-only check (camera content unaffected); continuing this operation.',flush=True)
 
 def invoke(camera,blob,*,stage,request,result,contents,mode,decode,record,save_raw,extras=()):
     """One invocation, never retries or cleans an unknown operation."""

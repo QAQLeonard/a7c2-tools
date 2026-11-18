@@ -53,7 +53,7 @@ def scan():
                     usb.util.dispose_resources(d)
                 report['libusb_devices'].append(row)
             if any(not row['known_camera_identity'] for row in report['libusb_devices']):
-                report['usb_identity_note'] = '已列出所有 Sony USB 身份；未知 PID 不等于已确认的 A7C II。请核对设备名称、接口类型及海量存储模式，不会给未知设备自动换驱动。'
+                report['usb_identity_note'] = 'All Sony USB identities are listed; an unknown PID is not a confirmed A7C II. Check the device name, interface type and Mass Storage mode; drivers are never changed automatically for unknown devices.'
     except Exception as exc:
         report['errors'].append({'stage': 'libusb-enumeration', 'error': repr(exc)})
     if sys.platform == 'darwin':
@@ -114,10 +114,10 @@ def elevate_request(arguments, job, action='driver_install'):
     shell = ctypes.WinDLL('shell32', use_last_error=True)
     shell.ShellExecuteExW.argtypes = [ctypes.POINTER(SHELLEXECUTEINFO)]
     shell.ShellExecuteExW.restype = wintypes.BOOL
-    print('等待 Windows 管理员确认…', flush=True)
+    print('Waiting for Windows administrator confirmation…', flush=True)
     if not shell.ShellExecuteExW(ctypes.byref(info)):
         raise ctypes.WinError(ctypes.get_last_error())
-    print('管理员进程已启动；正在实时读取进度。', flush=True)
+    print('Administrator process started; reading progress live.', flush=True)
     kernel = ctypes.WinDLL('kernel32', use_last_error=True)
     kernel.WaitForSingleObject.argtypes = [wintypes.HANDLE, wintypes.DWORD]
     kernel.WaitForSingleObject.restype = wintypes.DWORD
@@ -182,7 +182,7 @@ def install(arguments, job, *, report=None):
     pid = str(arguments.get('pid', '0e8a')).lower()
     if pid not in PIDS:
         raise ValueError('Unsupported USB identity')
-    print('正在检测 Sony 054C:' + pid.upper() + ' 的现有驱动…', flush=True)
+    print('Checking the existing driver for Sony 054C:' + pid.upper() + '…', flush=True)
     before = scan() if report is None else report
     write_json(job / 'driver-before.private.json', before)
     write_json(job / ('driver-before-' + pid + '.private.json'), before)
@@ -191,21 +191,21 @@ def install(arguments, job, *, report=None):
         query_errors=[e for e in before.get('errors',[]) if e.get('stage')=='windows-pnp']
         if query_errors:
             observed=', '.join('054C:'+row['pid'].upper()+' '+row.get('product','')
-                for row in before.get('libusb_devices',[])) or '无可读设备'
-            raise RuntimeError('Windows 驱动查询失败，不能据此判断相机未连接。libusb 当前检测：'+observed+
-                '。本次未安装驱动或写入相机。原始查询错误：'+json.dumps(query_errors,ensure_ascii=False))
+                for row in before.get('libusb_devices',[])) or 'no readable devices'
+            raise RuntimeError('Windows driver query failed, so it cannot be concluded that the camera is disconnected. Current libusb detection: '+observed+
+                '. No driver was installed and nothing was written to the camera. Original query error: '+json.dumps(query_errors,ensure_ascii=False))
         detected=[]
         for row in before['devices']:
             match=re.search(r'VID_054C&PID_[0-9A-F]{4}(?:&MI_[0-9A-F]{2})?',row['id'],re.I)
             detected.append((match.group(0) if match else 'Sony USB')+' '+str(row.get('description') or row.get('name') or ''))
-        details='；'.join(detected) or '未发现 Sony USB 设备'
-        raise RuntimeError(('未找到相机的海量存储身份 054C:0E8A，请在相机选择“海量存储”后重新连接。' if pid=='0e8a' else
-                            '未找到服务身份 054C:0336，请先使用“两阶段驱动与连接”入口。')+
-                           '当前检测：'+details+'。完整设备／接口信息已保存，不会为未知 PID 自动更换驱动。')
+        details='; '.join(detected) or 'no Sony USB device found'
+        raise RuntimeError(('The camera\'s Mass Storage identity 054C:0E8A was not found; select Mass Storage on the camera and reconnect. ' if pid=='0e8a' else
+                            'The service identity 054C:0336 was not found; use "Prepare two-stage drivers and test connection" first. ')+
+                           'Currently detected: '+details+'. Full device/interface details were saved; drivers are never changed automatically for an unknown PID.')
     if all(str(d.get('service', '')).lower() in ('winusb', 'libusbk', 'libusb0') for d in matching):
         services = ', '.join(sorted({str(d['service']) for d in matching}))
-        print('054C:%s 已安装 %s，直接沿用，跳过驱动安装与管理员申请。' % (pid.upper(), services), flush=True)
-        result = {'driver_changed': False, 'pid': pid, 'note': '已安装可用驱动，本次沿用，未重复安装', 'report': before}
+        print('054C:%s already has %s installed; reusing it and skipping driver installation and the administrator request.' % (pid.upper(), services), flush=True)
+        result = {'driver_changed': False, 'pid': pid, 'note': 'A usable driver is already installed; reused this time, not reinstalled', 'report': before}
         write_json(job / ('driver-result-' + pid + '.private.json'), result)
         return result
     if not ctypes.windll.shell32.IsUserAnAdmin():
@@ -220,7 +220,7 @@ def install(arguments, job, *, report=None):
                               errors='replace', cwd=job, creationflags=0x08000000,timeout=180)
     except subprocess.TimeoutExpired as exc:
         print(exc.stdout or '',flush=True);print(exc.stderr or '',file=sys.stderr,flush=True)
-        raise RuntimeError('驱动安装超过 180 秒，已停止等待；请保留日志核对当前绑定，不自动重复安装。') from exc
+        raise RuntimeError('Driver installation took more than 180 seconds and waiting has stopped; keep the log and check the current binding. It will not be reinstalled automatically.') from exc
     print(done.stdout, flush=True)
     print(done.stderr, file=sys.stderr, flush=True)
     after = scan()
@@ -241,7 +241,7 @@ def prepare(job):
         results.append(install({'pid': '0e8a'}, job))
 
         def service_driver():
-            print('正在等待服务身份 054C:0336；出现后先检测驱动，已有可用绑定则跳过安装。', flush=True)
+            print('Waiting for service identity 054C:0336; once it appears its driver is checked first, and installation is skipped if a usable binding exists.', flush=True)
             deadline = time.monotonic() + 20
             while True:
                 report = scan()
@@ -251,14 +251,14 @@ def prepare(job):
                     write_json(job / 'service-driver-enumeration.private.json', report)
                     raise RuntimeError('Sony service PID 0336 did not appear. Preserve this log and reconnect before another setup attempt.')
                 time.sleep(.5)
-            print('服务身份已出现，检测现有驱动。', flush=True)
+            print('Service identity appeared; checking the existing driver.', flush=True)
             results.append(install({'pid': '0336'}, job, report=report))
 
         transport.SERVICE_DRIVER_SETUP = service_driver
     try:
-        print('正在建立相机服务连接（此步骤不写固件）；两种 USB 身份分别检查。', flush=True)
+        print('Establishing the camera service connection (this step does not write firmware); each USB identity is checked separately.', flush=True)
         with Camera() as camera:
-            print('服务连接成功，驱动准备结束。', flush=True)
+            print('Service connection succeeded; driver preparation finished.', flush=True)
             return {'model': camera.identity['model'], 'service_connected': True,
                     'camera_firmware_written': False, 'driver_results': results}
     finally:
@@ -267,7 +267,7 @@ def prepare(job):
 
 def driver_inventory():
     """All signed PnP bindings, including other devices sharing an OEM INF."""
-    print('正在读取 Windows 驱动绑定…', flush=True)
+    print('Reading Windows driver bindings…', flush=True)
     script = r"$ErrorActionPreference='Stop'; [Console]::OutputEncoding=[Text.UTF8Encoding]::new(); Get-CimInstance Win32_PnPSignedDriver | ForEach-Object {[pscustomobject]@{id=$_.DeviceID;name=$_.DeviceName;inf=$_.InfName;provider=$_.DriverProviderName}} | ConvertTo-Json -Compress"
     done = subprocess.run(['powershell.exe', '-NoProfile', '-NonInteractive', '-Command', script],
                           capture_output=True, text=True, encoding='utf-8', errors='replace',
@@ -404,16 +404,16 @@ def uninstall(arguments, job):
         # package deletion, global driver cleanup or automatic reboot.
         exported = job / 'exported-drivers' / name.removesuffix('.inf')
         exported.mkdir(parents=True)
-        print('正在备份驱动包：' + name, flush=True)
+        print('Backing up driver package: ' + name, flush=True)
         run_pnputil(['/export-driver', name, exported], log_dir=job)
-        print('正在卸载相机驱动包：' + name, flush=True)
+        print('Uninstalling camera driver package: ' + name, flush=True)
         code = run_pnputil(['/delete-driver', name, '/uninstall'], log_dir=job)
         removed.append(name)
         reboot |= code == 3010
         write_json(job / 'driver-uninstall-progress.private.json',
                    {'removed': removed, 'reboot_required': reboot})
     if removed:
-        print('正在让 Windows 重新识别设备…', flush=True)
+        print('Asking Windows to re-detect devices…', flush=True)
         reboot |= run_pnputil(['/scan-devices'], log_dir=job) == 3010
     after = driver_inventory()
     write_json(job / 'driver-report.private.json', {'before': before, 'after': after,

@@ -113,7 +113,7 @@ def solve(response, coordinates, target_rgb, *, smooth, bounded=True,
         report['seed_optimizer'] = dict(converged=bool(initial.success),
             status=int(initial.status), iterations=int(initial.nit), message=str(initial.message))
         if initial.status == 0:
-            print('初始拟合达到迭代预算，保留当前近似值继续优化；不会中断转换。', flush=True)
+            print('Initial fit reached its iteration budget; keeping the current approximation and continuing to optimise. Conversion will not stop.', flush=True)
     if refine:
         ids, weights = measuredfit.interpolation(field_coordinates)
         cache = {}

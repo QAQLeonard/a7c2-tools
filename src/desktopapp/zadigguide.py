@@ -1,42 +1,42 @@
 """Manual Zadig driver steps for Windows; the same procedure as the README."""
 URL = 'https://zadig.akeo.ie/'
-TITLE = '用 Zadig 手动安装驱动'
-TEXT = """自动安装驱动失败时，大多数电脑改用 Zadig 手动安装就能成功。整个过程不写入相机，只更换这台电脑上相机两个 USB 身份所用的驱动。
+TITLE = 'Install the driver manually with Zadig'
+TEXT = """When automatic driver installation fails, most computers succeed with a manual install through Zadig. The whole process never writes to the camera; it only changes the drivers this computer uses for the camera's two USB identities.
 
-相机有两个 USB 身份，两个都要装驱动：
-· 普通连接：Zadig 里显示 ILCE-7CM2，USB ID 054C 0E8A。相机开机、选海量存储、接上电脑后出现。
-· 服务模式：Zadig 里显示 Sony USB Device，USB ID 054C 0336。本软件认证之后才出现，相机通常显示“请检查所连接的设备”。
+The camera has two USB identities, and both need a driver:
+· Normal connection: shown in Zadig as ILCE-7CM2, USB ID 054C 0E8A. Appears when the camera is on, set to Mass Storage and connected to the computer.
+· Service mode: shown in Zadig as Sony USB Device, USB ID 054C 0336. Appears only after this software authenticates; the camera usually shows "Please check the connected device".
 
-准备
-1. 点下方“打开 Zadig 下载页”，下载最新版 zadig-x.x.exe（单个文件，不用安装）。
-2. 相机开机，菜单里的 USB 连接选“海量存储（Mass Storage）”。用能传数据的线直接接电脑，不要经过扩展坞；台式机用机箱后面的口。
+Preparation
+1. Click "Open Zadig download page" below and download the latest zadig-x.x.exe (a single file, no installation needed).
+2. Turn the camera on and set the menu's USB connection to Mass Storage. Connect it directly to the computer with a data-capable cable, not through a hub; on a desktop PC use a port on the back of the case.
 
-第一部分：给 0E8A 装驱动
-1. 右键 Zadig，选“以管理员身份运行”。询问是否检查更新时，选哪个都可以。
-2. 在菜单 Options 里勾选 List All Devices。不勾选就看不到相机。
-3. 在上方下拉框里选 ILCE-7CM2。
-4. 核对 USB ID 一栏是 054C 0E8A。对不上就是选错了，换一项再核对。不要给键盘、鼠标、U 盘、网卡等其他设备换驱动。
-5. 在绿色箭头右边的驱动框里，用上下箭头选 libusbK。
-6. 点 Replace Driver（当前没有驱动时显示为 Install Driver），等 1–2 分钟，直到提示 The driver was installed successfully。
-7. 换好后，电脑上相机的盘符消失、相机显示“请检查所连接的设备”，都是正常的。
+Part 1: install the driver for 0E8A
+1. Right-click Zadig and choose "Run as administrator". When asked whether to check for updates, either answer is fine.
+2. In the Options menu, tick List All Devices. Without it the camera does not appear.
+3. In the drop-down at the top, select ILCE-7CM2.
+4. Check that the USB ID field reads 054C 0E8A. If it does not, you picked the wrong device; choose another and check again. Never change the driver of a keyboard, mouse, USB stick, network adapter or any other device.
+5. In the driver box to the right of the green arrow, use the up/down arrows to select libusbK.
+6. Click Replace Driver (shown as Install Driver when no driver is present) and wait 1–2 minutes until it reports The driver was installed successfully.
+7. After the change, it is normal for the camera drive to disappear from the computer and for the camera to show "Please check the connected device".
 
-第二部分：让 0336 出现，再给它装驱动
-1. Zadig 先不要关。在本页点“准备两阶段驱动并测试连接”。
-2. 软件会沿用刚装好的 0E8A 驱动进行认证，之后相机变成 Sony USB Device（054C 0336）。
-   · 日志出现“服务连接成功，驱动准备结束”：已经完成，直接看第三部分。
-   · 日志提示 0336 没有驱动、接口打不开，或一直等不到 0336：先不要拔线，也不要关相机，继续下一步。
-3. 回到 Zadig，再点一次 Options → List All Devices 刷新列表，选 Sony USB Device，核对 USB ID 是 054C 0336。
-   · 列表里找不到 0336，说明相机已经退出服务模式：回到本部分第 1 步再测一次，0336 出现后马上在 Zadig 里刷新。
-4. 驱动同样选 libusbK，点 Replace Driver 或 Install Driver，等到提示成功。
+Part 2: make 0336 appear, then install its driver
+1. Keep Zadig open. On this page, click "Prepare two-stage drivers and test connection".
+2. The software authenticates using the 0E8A driver you just installed; the camera then becomes Sony USB Device (054C 0336).
+· If the log shows "Service connection succeeded; driver preparation finished": you are done, go straight to Part 3.
+· If the log says 0336 has no driver, the interface cannot be opened, or 0336 never appears: do not unplug or turn off the camera; continue with the next step.
+3. Back in Zadig, click Options → List All Devices again to refresh the list, select Sony USB Device and check that the USB ID is 054C 0336.
+· If 0336 is not in the list, the camera has already left service mode: go back to step 1 of this part and test again, then refresh Zadig as soon as 0336 appears.
+4. Again select libusbK as the driver, click Replace Driver or Install Driver, and wait for the success message.
 
-第三部分：断电后重新测试
-1. 拔掉 USB，相机关机，取出电池约 1 分钟。装回电池开机，选海量存储，重新接上。
-2. 在本页再点一次“准备两阶段驱动并测试连接”。日志出现“服务连接成功，驱动准备结束”后，就可以去首页一键安装。
+Part 3: power-cycle and test again
+1. Unplug USB, turn the camera off and remove the battery for about 1 minute. Reinsert the battery, power on, select Mass Storage and reconnect.
+2. On this page, click "Prepare two-stage drivers and test connection" once more. When the log shows "Service connection succeeded; driver preparation finished", you can go to the Home page and run the one-click install.
 
-检查是否装对：打开 Windows 设备管理器，应能看到“libusbK USB Devices”分类，下面有 ILCE-7CM2；装过 0336 后还会有 Sony USB Device。
+To check the installation: open Windows Device Manager; there should be a "libusbK USB Devices" category containing ILCE-7CM2, and also Sony USB Device once 0336 has been installed.
 
-遇到问题
-· libusbK 安装失败：重新以管理员身份运行 Zadig 再试；仍然失败，可以改选 WinUSB。本软件可以使用 WinUSB、libusbK、libusb0 中的任意一种。
-· 下拉框里没有相机：确认已勾选 List All Devices，相机已开机并选了海量存储，换一根能传数据的线。
-· 想恢复原样：在本页点“卸载相机驱动，恢复 Windows 默认连接”，Zadig 装的驱动也会一起卸载。之后拔插 USB，相机会重新显示为 U 盘。
+Troubleshooting
+· libusbK fails to install: run Zadig as administrator again and retry; if it still fails, choose WinUSB instead. This software works with any of WinUSB, libusbK or libusb0.
+· The camera is not in the drop-down: make sure List All Devices is ticked, the camera is on and set to Mass Storage, and try another data-capable cable.
+· To undo everything: on this page click "Uninstall camera drivers and restore Windows default connection"; drivers installed by Zadig are removed too. Then unplug and replug USB and the camera shows up as a USB drive again.
 """

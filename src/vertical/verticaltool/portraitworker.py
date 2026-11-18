@@ -47,7 +47,7 @@ def decode(raw,mode):
         return dict(result,cleanup_deferred=True,reload_required=True)
     busy=(mode in (1,2,3) and phase==5 and completed==3 and status==readonly==-16)
     if status and not busy:
-        raise ValueError('竖屏线框操作停止：文件 %d，步骤 %d，窗口 %d，错误 %d；已写 %d 字节。原生报告：%s'%(
+        raise ValueError('Vertical Display frame operation stopped: file %d, step %d, window %d, error %d; %d bytes written. Native report: %s'%(
             file,phase,window,status,byte_count,result))
     if mode and (phase!=5 or completed!=3):raise ValueError('Portrait frame operation did not finish: '+str(result))
     if busy:result['readonly_deferred_busy']=True

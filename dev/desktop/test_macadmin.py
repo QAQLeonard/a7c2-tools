@@ -39,7 +39,7 @@ def test_terminal_launcher_quoting_preserves_spaces_quotes_and_metacharacters(tm
         shell=macadmin.shell_command(request,501,20,environment)
     assert cmd[:3]==['/usr/bin/open','-a','Terminal']
     script=Path(cmd[3]).read_text(encoding='utf-8')
-    assert Path(cmd[3]).parent==request.parent and 'password ' not in script
+    assert Path(cmd[3]).parent==request.parent and not any('password ' in line for line in script.splitlines() if not line.startswith(("printf ","'Enter your Mac login password")))
     lines=script.splitlines()
     sudo=[line for line in lines if line.startswith('/usr/bin/sudo ')]
     assert len(sudo)==1 and shlex.split(sudo[0])==['/usr/bin/sudo','/bin/sh','-c',shell]
@@ -88,7 +88,7 @@ def test_closed_terminal_or_wrong_password_never_starts_worker(tmp_path,monkeypa
     assert code==2
     assert state['error_type']=='MacAuthorizationCancelled'
     assert state['camera_io'] is False
-    assert '尚未开始' in state['error']
+    assert 'has not started yet' in state['error']
 
 
 def test_terminal_that_cannot_open_reports_not_started(tmp_path,monkeypatch):
@@ -125,7 +125,7 @@ def test_worker_that_ends_without_outcome_is_unknown_not_cancelled(tmp_path,monk
     with patch.object(macadmin,'alive',return_value=False):
         code,_,state=execute(request,terminal(request,'closed',status=running))
     assert code==2 and state['error_type']=='MacWorkerEnded'
-    assert 'camera_io' not in state and '结果未知' in state['error']
+    assert 'camera_io' not in state and 'result is unknown' in state['error']
 
 
 def test_dead_worker_without_terminal_exit_marker_cannot_wait_forever(tmp_path,monkeypatch):

@@ -1,26 +1,26 @@
 """Format and color-space guidance for the desktop compiler."""
-TITLE = 'LUT / DCP 格式与色彩空间'
-TEXT = """相机写入页只选 .a7look，不直接写入 .cube 或 .dcp。生成工具只转换电脑文件，不连接相机。
+TITLE = 'LUT / DCP formats and color spaces'
+TEXT = """The camera write page only accepts .a7look; it never writes .cube or .dcp directly. The generator only converts files on the computer and does not connect to the camera.
 
-1. 桌面生成器接受什么 CUBE？
-输入：Sony ST 标准创意外观、sRGB 编码的 RGB；输出：sRGB。
-不是 S-Log3、S-Log2、HLG、S-Gamut3.Cine、DaVinci Wide Gamut 或 ACES。普通 Rec.709 视频 LUT 也不自动等同于这个输入；还要确认传递曲线和色域。
-只有标注“适用于 Sony ST / sRGB 照片”的 LUT 才可直接用。文件扩展名 .cube 不包含可靠的色彩空间声明，程序无法自动判断。
+1. Which CUBE does the desktop generator accept?
+Input: Sony ST standard Creative Look, sRGB-encoded RGB; output: sRGB.
+Not S-Log3, S-Log2, HLG, S-Gamut3.Cine, DaVinci Wide Gamut or ACES. An ordinary Rec.709 video LUT is not automatically this input either; also check its transfer curve and gamut.
+Only LUTs labelled "for Sony ST / sRGB photos" can be used directly. The .cube extension carries no reliable color-space declaration, so the program cannot detect it.
 
-2. 我只有 S-Log3 LUT 怎么办？
-例如 S-Log3 / S-Gamut3.Cine → Rec.709 的 LUT，不能在当前桌面生成器里直接选用。直接套在 ST 图片上会出现反差、曝光或颜色错误，改扩展名或改文件头不能解决。
-请在调色软件中重新导出完整的“Sony ST / sRGB 输入 → 目标风格 → sRGB 输出”的 3D CUBE，包含需要的输入和输出变换。不能只把导出标签改成 sRGB。
-高级命令行支持显式输入空间与 ST→该空间的桥接 CUBE；目标 LUT 的输出仍须为 sRGB。当前 GUI 不提供 Log 桥接选项；桥接也不保证重建 Sony 原生 Log 处理。
+2. I only have an S-Log3 LUT. What now?
+A LUT such as S-Log3 / S-Gamut3.Cine → Rec.709 cannot be used directly in the current desktop generator. Applied to ST images it gives wrong contrast, exposure or color; renaming the extension or editing the header does not fix that.
+Re-export a complete 3D CUBE from your grading software covering "Sony ST / sRGB input → target look → sRGB output", including the needed input and output transforms. Merely relabelling the export as sRGB is not enough.
+The advanced command line supports an explicit input space plus an ST→that-space bridge CUBE; the target LUT must still output sRGB. The current GUI has no Log bridge option, and a bridge does not guarantee rebuilding Sony's native Log processing.
 
-3. CUBE 文件结构
-纯文本独立 3D LUT，LUT_3D_SIZE N；N 支持 2–129，常见 17 / 33 / 65，建议 33。
-后面恰好 N³ 行，每行 R G B 三个有限数字（不是 0–255 整数色值）；红通道变化最快。TITLE 可选，DOMAIN_MIN / DOMAIN_MAX 可选，默认 0 0 0 / 1 1 1。
-不支持 1D LUT、1D shaper＋3D 混合文件、.3dl、.look、.xmp 或图片。超出 0–1 的输出会在拟合前裁切；导出时建议已在 0–1。
+3. CUBE file structure
+A plain-text standalone 3D LUT with LUT_3D_SIZE N; N may be 2–129, commonly 17 / 33 / 65, 33 recommended.
+Followed by exactly N³ lines, each with three finite R G B numbers (not 0–255 integer values); red varies fastest. TITLE is optional; DOMAIN_MIN / DOMAIN_MAX are optional and default to 0 0 0 / 1 1 1.
+Not supported: 1D LUTs, mixed 1D shaper + 3D files, .3dl, .look, .xmp or images. Output outside 0–1 is clipped before fitting; exporting within 0–1 is recommended.
 
-4. DCP 是什么？
-.dcp 是 Adobe 相机配置文件，不是 S-Log3 视频 LUT。生成器直接离线解析 DCP 的 LookTable／色调曲线并拟合，无需 Lightroom、显影插件、renderer 配置或联网。
-DCP 通过内置共享 ST 映射进行近似拟合，不复制来源机型的传感器矩阵或 HueSat 校准，也不声称完整复现 Adobe 显影。单独 CUBE 不会自动变成 Lightroom RAW 的 DCP 配置。
+4. What is a DCP?
+A .dcp is an Adobe camera profile, not an S-Log3 video LUT. The generator parses the DCP's LookTable / tone curve offline and fits it directly; no Lightroom, development plug-in, renderer configuration or network is needed.
+A DCP is fitted approximately through the built-in shared ST mapping. It does not copy the source camera's sensor matrix or HueSat calibration, nor does it claim to fully reproduce Adobe rendering. A standalone CUBE does not automatically become a DCP profile for Lightroom RAW.
 
-5. 最后怎么写？
-生成新的 .a7look → 添加操作项 → 选择槽位和“写入 A7Look” → 选择文件并填写机内名称 → 查看并应用。多个槽位可一起写，没列出的槽位保持原样。
-写入后按弹窗断电加载。效果是机内色表拟合近似；65 点 CUBE 不代表能原样保留全部采样精度，也不能保证与原 DCP / LUT 完全一致。"""
+5. How do I write it in the end?
+Generate a new .a7look → Add operation → choose a slot and "Write A7Look" → choose the file and enter the in-camera name → Review and apply. Several slots can be written together; slots not listed stay unchanged.
+After writing, power-cycle as the dialog describes to load it. The result is an in-camera color-table fit and an approximation; a 65-point CUBE does not mean every sample's precision is preserved, and an exact match with the original DCP / LUT is not guaranteed."""

@@ -27,7 +27,7 @@ def test_field_case_with_empty_journal_is_retired(tmp_path,capsys):
     cli.require_idle(state,root)
     assert state['pending'] is None and state['audio_job'] is None
     assert state['history'][-1]['reason']=='stopped_before_native_worker'
-    assert '没有注册任何声音' in capsys.readouterr().out
+    assert 'no sound was registered' in capsys.readouterr().out
 
 
 @pytest.mark.parametrize('journal,report,extra',[

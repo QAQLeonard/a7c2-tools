@@ -236,7 +236,7 @@ def main(argv=None):
     save(work/'result.json',report)
     print('Created '+str(args.output.resolve()),flush=True)
     if not report['final_optimizer']['optimizer_converged']:
-        print('已生成近似结果；最终优化未完全收敛。验证色样平均预测误差 %.2f / 255，不能代表实机色彩准确度。' %
+        print('Approximate result generated; the final optimisation did not fully converge. Mean prediction error on validation patches %.2f / 255; this does not represent colour accuracy on the camera.' %
               report['virtual_heldout_validation_replica']['RGB_MAE_8bit'],flush=True)
     print('Offline candidate; no camera connection or write was performed.',flush=True)
     return 0

@@ -20,10 +20,10 @@ class Job:
         self.state.setdefault('journal',[]).append(row);core.save_json(self.state_path,self.state)
     def load(self):
         core.assets();self.state=core.read_json(self.state_path)
-        if self.state.get('format')!=1 or self.state.get('model')!=core.MODEL:raise ValueError('不是有效機身工作目錄')
+        if self.state.get('format')!=1 or self.state.get('model')!=core.MODEL:raise ValueError('Not a valid body workspace')
         for name in self.state['backup_files']:
             if (self.root/'original'/name).read_bytes()!=(Path(self.state['backup_copy'])/name).read_bytes():
-                raise ValueError('兩份備份內容不同：'+name)
+                raise ValueError('The two backup copies differ: '+name)
         core.backup_records((self.root/'original/backup.private.bin').read_bytes())
         if 'compatibility' in self.state:
             import compat
@@ -35,7 +35,7 @@ class Job:
         if dynamic:
             import compat
             compat.validate(self.root,self.state)
-            if self.state['compatibility']['already_enabled']:raise ValueError('已啟用狀態不應執行安裝器')
+            if self.state['compatibility']['already_enabled']:raise ValueError('Installer must not run when already enabled')
             if 'byte_builds' in self.state['compatibility']:
                 if byte_build is None:
                     return [self.module(session,name,mode,build) for build in self.state['compatibility']['byte_builds']]
@@ -50,16 +50,16 @@ class Job:
         if request:names.append(request[0])
         for item in names:
             if session.read('/tmp/jiritsu/'+item,True) is not None:
-                raise RuntimeError('存在先前臨時檔，先保存並確認結果，請勿直接重試：'+item)
-        if session.read('/tmp/jiritsu/../../etc/ld.so.preload',True):raise RuntimeError('發現既有預載配置，停止')
+                raise RuntimeError('A previous temporary file exists; save it and confirm the result first, do not simply retry: '+item)
+        if session.read('/tmp/jiritsu/../../etc/ld.so.preload',True):raise RuntimeError('Existing preload configuration found; stopping')
         created=[];launched=False
         try:
             created.append('a7c2-preview-staged.so');session.temp(created[-1],blob)
-            if session.read('/tmp/jiritsu/'+created[-1])!=blob:raise RuntimeError('臨時模組讀回不符')
+            if session.read('/tmp/jiritsu/'+created[-1])!=blob:raise RuntimeError('Temporary module readback mismatch')
             if request:
                 contents=struct.pack('<8sII',request[1],mode,0)
                 created.append(request[0]);session.temp(request[0],contents)
-                if session.read('/tmp/jiritsu/'+request[0])!=contents:raise RuntimeError('執行模式讀回不符')
+                if session.read('/tmp/jiritsu/'+request[0])!=contents:raise RuntimeError('Run-mode readback mismatch')
             self.audit('native_about_to_run',module=name,mode=mode)
             created.extend(['libJit.so',result])
             if name=='runtime':created.append('a7c2.probe.result')
@@ -86,15 +86,15 @@ class Job:
                 if not session.healthy:
                     self.audit('temporary_cleanup_pending',name=item);continue
                 if session.read('/tmp/jiritsu/'+item,True) is not None:session.temp(item,remove=True)
-                if session.read('/tmp/jiritsu/'+item,True) is not None:raise RuntimeError('臨時檔清理未完成')
+                if session.read('/tmp/jiritsu/'+item,True) is not None:raise RuntimeError('Temporary file cleanup incomplete')
     def prepare(self,second,firmware_version=core.VERSION):
         from transport import Session
         core.assets()
-        if firmware_version!=core.VERSION:raise ValueError('FL23 只適用於 2.01；請依相機版本頁填寫')
-        if self.root.exists() and any(self.root.iterdir()):raise ValueError('請選擇新的空白工作目錄，保留舊紀錄')
+        if firmware_version!=core.VERSION:raise ValueError('FL23 supports firmware 2.01 only; enter the version shown on the camera version page')
+        if self.root.exists() and any(self.root.iterdir()):raise ValueError('Choose a new, empty workspace folder; keep the old records')
         second=Path(second).resolve()
-        if second==self.root or self.root in second.parents or second in self.root.parents:raise ValueError('第二份備份請使用獨立目錄，不能互相包含')
-        if second.exists() and any(second.iterdir()):raise ValueError('第二份備份目錄必須為空')
+        if second==self.root or self.root in second.parents or second in self.root.parents:raise ValueError('The second backup must use a separate folder; the two folders must not contain each other')
+        if second.exists() and any(second.iterdir()):raise ValueError('The second backup folder must be empty')
         self.root.mkdir(parents=True,exist_ok=True);second.mkdir(parents=True,exist_ok=True)
         (self.root/'original').mkdir();(self.root/'candidate').mkdir()
         self.state={'format':1,'model':core.MODEL,'version':firmware_version,'version_source':'user-camera-version-screen','phase':'preparing',
@@ -102,17 +102,17 @@ class Job:
         self.save('preparing')
         with Session() as session:
             self.state['identity']=session.identity
-            event('已辨識 A7C II，正在備份原始程式及這台相機的設定。')
+            event('A7C II detected; backing up the original programs and the settings of this camera.')
             backup=session.call(session.camera.getBackupPresetData,True);records=core.backup_records(backup)
             originals={}
             for chip,name,path in [(1,core.PROGRAMS[1],'/cp/cpapp-b.bin'),(0,core.PROGRAMS[0],'/usr/lib/appFw.so')]:
-                event('讀取完整 '+name)
+                event('Reading full '+name)
                 data=session.read('/tmp/jiritsu/../..'+path)
                 originals[name+'.bin']=data
             originals['backup.private.bin']=backup
             for key in core.CP_KEYS:
                 data=session.cp_read(key)
-                if data!=records[1][key].data:raise ValueError('原生色彩讀回與機身備份不符')
+                if data!=records[1][key].data:raise ValueError('Native colour readback does not match the body backup')
                 originals[f'unit-{key:08x}.bin']=data
             # Capture the initial rollback point before building candidates.
             # A later LUT job must not invalidate this independent archive.
@@ -128,7 +128,7 @@ class Job:
             for name,data in originals.items():
                 for parent in [self.root/'original',second]:
                     target=parent/name;target.write_bytes(data)
-                    if target.read_bytes()!=data:raise ValueError('備份寫回驗證不符')
+                    if target.read_bytes()!=data:raise ValueError('Backup write-back verification mismatch')
                 self.state['backup_files'][name]=len(data)
             self.save('backups_verified')
             self.state['compatibility']=compat.prepare(self.root,originals['appFw.so.bin'],originals['cpapp-b.bin.bin'],firmware_version)
@@ -137,7 +137,7 @@ class Job:
             for i,key in enumerate(core.AP_KEYS):
                 expected=bytes([10+i]) if enabled else b'\0'
                 if session.call(session.camera.readBackup,key)!=expected or records[0][key].data!=expected:
-                    raise ValueError('保留槽已使用；此預覽版拒絕覆蓋')
+                    raise ValueError('Reserved slot is already in use; this preview refuses to overwrite it')
             units=(originals['unit-02a40001.bin'],originals['unit-02a4000d.bin'])
             if enabled:
                 compat.validate_enabled_colors(*units);merged=units
@@ -149,15 +149,15 @@ class Job:
                 self.module(session,'installer',0)
                 self.module(session,'wbi',0)
         self.save('prepared')
-        if enabled:event('已確認 FL2／FL3 已啟用；保留 LUT／名稱／自訂配方，沒有重複寫入。請執行 verify 核對載入狀態。')
-        else:event('備份、候選與實機只校驗完成。尚未改寫韌體或保存拍攝設定。')
+        if enabled:event('Confirmed FL2/FL3 are already enabled; LUTs, names and custom recipes kept, nothing rewritten. Run verify to check the loaded state.')
+        else:event('Backup, candidate and read-only camera check complete. Firmware and saved shooting settings have not been changed yet.')
     def units(self):
         originals={k:(self.root/'original'/f'unit-{k:08x}.bin').read_bytes() for k in core.CP_KEYS}
         merged=core.merge_colors(originals[core.CP_KEYS[0]],originals[core.CP_KEYS[1]])
         return originals,dict(zip(core.CP_KEYS,merged))
     def files(self,session,after):
         for chip,name,path in [(1,core.PROGRAMS[1],'/cp/cpapp-b.bin'),(0,core.PROGRAMS[0],'/usr/lib/appFw.so')]:
-            event('完整讀回 '+name)
+            event('Full readback '+name)
             data=session.read('/tmp/jiritsu/../..'+path)
             folder=self.root/'readback';folder.mkdir(exist_ok=True)
             stamp=f'{datetime.now():%Y%m%d-%H%M%S-%f}-{name}'
@@ -166,7 +166,7 @@ class Job:
             if not after:expected=original
             elif 'compatibility' in self.state:expected=(self.root/'candidate'/name).read_bytes()
             else:expected=core.patch_program(original,chip)
-            if data!=expected:raise ValueError('程式完整讀回不符；停止後續操作')
+            if data!=expected:raise ValueError('Full program readback mismatch; stopping further operations')
         self.audit('host_full_file_readback_verified',after=after)
     def settings(self,session,restore=False):
         originals,merged=self.units();target=originals if restore else merged
@@ -178,20 +178,20 @@ class Job:
         current_ap={k:session.call(session.camera.readBackup,k) for k in core.AP_KEYS}
         for key in core.CP_KEYS:
             accepted=[originals[key],merged[key]] if restore else [originals[key]]
-            if current_cp[key] not in accepted or before[1][key].data!=current_cp[key]:raise ValueError('CP 設定狀態未知，拒絕寫入')
+            if current_cp[key] not in accepted or before[1][key].data!=current_cp[key]:raise ValueError('CP settings state unknown; refusing to write')
         for i,key in enumerate(core.AP_KEYS):
             accepted=[b'\0',bytes([10+i])] if restore else [b'\0']
-            if current_ap[key] not in accepted or before[0][key].data!=current_ap[key]:raise ValueError('AP 設定狀態未知，拒絕寫入')
+            if current_ap[key] not in accepted or before[0][key].data!=current_ap[key]:raise ValueError('AP settings state unknown; refusing to write')
         for key in core.CP_KEYS:
             if current_cp[key]==target[key]:continue
             self.audit('about_to_write_cp',key=hex(key));session.cp_write(key,target[key])
-            if session.cp_read(key)!=target[key]:raise ValueError('CP 讀回失敗')
+            if session.cp_read(key)!=target[key]:raise ValueError('CP readback failed')
         if any(current_cp[k]!=target[k] for k in core.CP_KEYS):
             self.audit('about_to_save_cp');session.call(session.camera.saveBackup,0x02a4)
         for key in core.AP_KEYS:
             if current_ap[key]==desired[key]:continue
             self.audit('about_to_write_ap',key=hex(key));session.ap_write(key,desired[key])
-            if session.call(session.camera.readBackup,key)!=desired[key]:raise ValueError('AP 綁定讀回失敗')
+            if session.call(session.camera.readBackup,key)!=desired[key]:raise ValueError('AP binding readback failed')
         if any(current_ap[k]!=desired[k] for k in core.AP_KEYS):
             self.audit('about_to_save_ap');session.call(session.camera.saveBackup,0x02cf)
         after_raw=session.call(session.camera.getBackupPresetData,True)
@@ -202,33 +202,33 @@ class Job:
         preservation=core.verify_preservation(before,core.backup_records(after_raw),expected)
         stored=core.backup_records(stored_raw)
         for (chip,key),value in expected.items():
-            if stored[chip][key].data!=value:raise ValueError('儲存後讀回不符')
+            if stored[chip][key].data!=value:raise ValueError('Readback after save mismatch')
         self.audit('settings_storage_verified',restore=restore,**preservation)
     def install(self,battery=None,*,power_confirmed=False):
         from transport import Session
         self.load()
-        if self.state['phase']!='prepared':raise ValueError('需先完成準備；狀態未知時不允許重跑')
+        if self.state['phase']!='prepared':raise ValueError('Run prepare first; re-running is not allowed while the state is unknown')
         if self.state.get('compatibility',{}).get('already_enabled'):
-            event('準備時已確認 FL2／FL3 存在；未執行任何安裝。請執行 verify。');return
+            event('Prepare already confirmed FL2/FL3 are present; nothing was installed. Run verify.');return
         import compat
-        event('提醒：'+compat.WARNING)
+        event('Note: '+compat.WARNING)
         from looktool.power import require_power
         self.state['power_confirmation']=require_power(battery,confirmed=power_confirmed)
         with Session(self.state['identity']) as session:
             # Recheck every per-body target before any program-file write.
             originals,_=self.units();current=core.backup_records(session.call(session.camera.getBackupPresetData,True))
             if any(current[1][k].data!=v for k,v in originals.items()) or any(current[0][k].data!=b'\0' for k in core.AP_KEYS):
-                raise ValueError('準備後機身目標設定已變；請勿覆蓋')
+                raise ValueError('Target body settings changed after prepare; do not overwrite')
             self.module(session,'wbi',0)
-            self.save('writing_programs');event('正在寫入固定窗口；請勿拔線或關機。')
+            self.save('writing_programs');event('Writing fixed windows; do not unplug the cable or power off.')
             self.module(session,'installer',1)
             self.save('programs_written');self.files(session,True)
             self.save('writing_settings');self.settings(session)
-            self.save('settings_verified');event('程式及保存設定已驗證，正在處理舊開機快照。')
+            self.save('settings_verified');event('Programs and saved settings verified; handling the old boot snapshot.')
             self.module(session,'wbi',1)
         self.save('installed_pending_cold_start')
-        event('安裝及讀回完成。拔線、正常關機，等存取燈熄滅後取出電池10秒，再裝回開機。')
-        event('請分別重設FL2/FL3、拍新照片及回放；目前是實驗預覽版。')
+        event('Install and readback complete. Unplug the cable, shut down normally, wait for the access light to go out, remove the battery for 10 seconds, then reinsert it and power on.')
+        event('Reset FL2/FL3 separately, take new photos and play them back; this is an experimental preview.')
     def verify(self):
         from transport import Session
         self.load()
@@ -240,36 +240,36 @@ class Job:
             import compat
             _,enabled,_,_,_=compat.plan(programs[core.PROGRAMS[0]],programs[core.PROGRAMS[1]],
                 self.state.get('version',core.VERSION),transitions=False)
-            if not enabled:raise ValueError('目前程式未完整啟用 FL2／FL3')
+            if not enabled:raise ValueError('The current programs do not fully enable FL2/FL3')
             current=core.backup_records(session.call(session.camera.getBackupPresetData,True))
             if self.state.get('compatibility',{}).get('already_enabled'):
                 new={k:(self.root/'original'/f'unit-{k:08x}.bin').read_bytes() for k in core.CP_KEYS}
             else:_,new=self.units()
-            if any(current[1][k].data!=v for k,v in new.items()):raise ValueError('重開後 CP 參數不符')
-            if any(current[0][k].data!=bytes([10+i]) for i,k in enumerate(core.AP_KEYS)):raise ValueError('重開後 AP 綁定不符')
+            if any(current[1][k].data!=v for k,v in new.items()):raise ValueError('CP parameters do not match after restart')
+            if any(current[0][k].data!=bytes([10+i]) for i,k in enumerate(core.AP_KEYS)):raise ValueError('AP bindings do not match after restart')
             runtime=self.module(session,'runtime')
             candidate=programs[core.PROGRAMS[0]]
             for span in runtime['spans']:
                 expected=candidate[span['offset']:span['offset']+span['length']].hex()
                 if span['memory']!=expected or span['disk']!=expected:
-                    raise ValueError('執行期仍有舊資料；請確認已關機並取出電池後再開機')
+                    raise ValueError('Runtime still holds old data; make sure the camera was shut down and the battery removed before powering on')
         self.audit('post_restart_files_and_targets_verified')
-        event('磁碟程式與保存參數符合預期；選單、照片及回放仍需實際檢查。')
+        event('On-disk programs and saved parameters match expectations; menus, photos and playback still need checking on the camera.')
 
 def main():
-    p=argparse.ArgumentParser(description='A7C II 2.01 FL2/FL3 實驗預覽版')
+    p=argparse.ArgumentParser(description='A7C II 2.01 FL2/FL3 experimental preview')
     p.add_argument('command',choices=['prepare','install','verify','check-package'])
     p.add_argument('--workspace',type=Path);p.add_argument('--backup-copy',type=Path)
     p.add_argument('--firmware-version',help='prepare: firmware version from the camera version screen, e.g. 2.01')
     p.add_argument('--battery-percent',type=int,default=-1)
     args=p.parse_args()
-    if args.command=='check-package':core.assets();event('套件資產完整；此檢查不連線相機。');return
-    if not args.workspace:p.error('必須指定機身工作目錄')
+    if args.command=='check-package':core.assets();event('Package assets complete; this check does not connect to the camera.');return
+    if not args.workspace:p.error('A body workspace folder is required')
     job=Job(args.workspace)
     try:
         if args.command=='prepare':
-            if not args.backup_copy:p.error('準備時需指定第二份備份目錄')
-            if not args.firmware_version:p.error('請用 --firmware-version 2.01 填寫相機版本頁的版本')
+            if not args.backup_copy:p.error('prepare requires a second backup folder')
+            if not args.firmware_version:p.error('Use --firmware-version 2.01 to enter the version shown on the camera version page')
             job.prepare(args.backup_copy,args.firmware_version)
         elif args.command=='install':job.install(args.battery_percent)
         elif args.command=='verify':job.verify()
@@ -277,7 +277,7 @@ def main():
         if hasattr(job,'state'):
             job.state['last_error']=str(exc);job.state['failed_during']=job.state['phase']
             job.save('needs_review')
-        event('已停止：'+str(exc));event('不要盲目重跑寫入或重新開機；保留工作目錄供確認。')
+        event('Stopped: '+str(exc));event('Do not blindly re-run writes or restart; keep the workspace for review.')
         import traceback
         diagnostic=job.root/'evidence';diagnostic.mkdir(parents=True,exist_ok=True)
         (diagnostic/f'{datetime.now():%Y%m%d-%H%M%S-%f}-error.txt').write_text(traceback.format_exc(),encoding='utf-8')

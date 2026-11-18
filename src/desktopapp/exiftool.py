@@ -25,7 +25,7 @@ def download(platform):
     urls=['https://downloads.sourceforge.net/project/exiftool/'+name,'https://exiftool.org/'+name]
     errors=[]
     for url in urls:
-        print('下载官方 ExifTool：'+url,flush=True)
+        print('Downloading official ExifTool: '+url,flush=True)
         try:
             request=urllib.request.Request(url,headers={'User-Agent':'A7C2Tools'})
             with urllib.request.urlopen(request,timeout=30) as response:data=response.read()
@@ -34,7 +34,7 @@ def download(platform):
             return data,url
         except Exception as exc:
             detail=url+': '+repr(exc);errors.append(detail);print(detail,flush=True)
-    raise RuntimeError('ExifTool 自动下载失败，本次未开始相机操作。请检查网络后再点同一按钮；完整错误：\n'+'\n'.join(errors))
+    raise RuntimeError('Automatic ExifTool download failed; no camera operation was started. Check the network and click the same button again; full errors:\n'+'\n'.join(errors))
 
 
 def relative_name(name):
@@ -80,11 +80,11 @@ def install(destination,*,platform=None,archive=None):
         tool=unpack(data,folder,platform)
         result=subprocess.run([str(tool),'-ver'],capture_output=True,text=True,timeout=30,
                               creationflags=0x08000000 if os.name=='nt' else 0)
-        if result.returncode:raise RuntimeError('ExifTool 启动失败：'+result.stdout+'\n'+result.stderr)
+        if result.returncode:raise RuntimeError('ExifTool failed to start: '+result.stdout+'\n'+result.stderr)
         shutil.copytree(folder,destination,dirs_exist_ok=True)
     (destination/'SOURCE.txt').write_text('ExifTool '+VERSION+' by Phil Harvey\n'+source+'\nOriginal license retained in LICENSE / exiftool_files.\n',encoding='utf-8')
     (destination/'installed.txt').write_text(result.stdout.strip(),encoding='utf-8')
-    print('ExifTool 已就绪：'+result.stdout.strip(),flush=True)
+    print('ExifTool ready: '+result.stdout.strip(),flush=True)
     return executable(destination,platform)
 
 
@@ -97,7 +97,7 @@ def ensure(preferred=None):
     if found:candidates.append(Path(found))
     for path in candidates:
         if path.is_file():return str(path.resolve())
-    print('正在准备 Lightroom 的 ExifTool 辅助程序（仅电脑端，不连接相机）。',flush=True)
+    print('Preparing the ExifTool helper for Lightroom (computer only; the camera is not connected).',flush=True)
     return str(install(cache).resolve())
 
 

@@ -82,9 +82,9 @@ def require_idle(state, root=None):
         retire_readonly_failure(root, state)
     if state.get('pending'):
         pending=state['pending']
-        raise ValueError('上一次声音操作（%s）中途停止，结果还没确认，所以没有开始新的操作，也没有连接相机。'
-                         '请点窗口底部“导出诊断包”发给作者核对；不要删除声音工作目录。'
-                         '（Previous operation is unresolved: %s）'%(pending.get('command','?'),pending.get('job','')))
+        raise ValueError('The previous sound operation (%s) stopped part-way and its result is not confirmed yet, so no new operation was started and the camera was not connected. '
+                         'Click "Export diagnostics" at the bottom of the window and send it to the author for review; do not delete the sound workspace. '
+                         '(Previous operation is unresolved: %s)'%(pending.get('command','?'),pending.get('job','')))
 
 
 def retire_readonly_failure(root, state):
@@ -112,7 +112,7 @@ def retire_readonly_failure(root, state):
     state['native_job'] = None
     state['pending'] = None
     save(root, state)
-    print('旧声音任务已确认停在写入前，检查结果和临时清理均完整；已解除占用，原日志保留。', flush=True)
+    print('The old sound job is confirmed to have stopped before writing, with check results and temporary cleanup complete; the lock was released and the original log kept.', flush=True)
     return True
 
 
@@ -129,7 +129,7 @@ def retire_prewrite_install(root,state):
         phase='failed_before_native_execution'))
     state['pending']=None;state['boot_job']=None
     save(root,state)
-    print('上次保存停在电脑端准备阶段，未执行相机写入；已解除占用，保留原日志。',flush=True)
+    print('The last save stopped during preparation on the computer; nothing was written to the camera. The lock was released and the original log kept.',flush=True)
     return True
 
 
@@ -142,11 +142,11 @@ def retire_preallocation_audition(root,state):
     try:
         job=load_job(path)
         if buffer_trial.stopped_before_native(job,path):
-            reason,message='stopped_before_native_worker',('上次试听在调用相机原生程序之前就已停止，没有注册任何声音；'
-                '已解除占用，原记录保留。')
+            reason,message='stopped_before_native_worker',('The last audition stopped before calling the native camera program; no sound was registered. '
+                'The lock was released and the original record kept.')
         elif job.get('phase')=='needs_review' and buffer_trial.preallocation_marker_rejection(
                 job,(Path(path)/'report.private.bin').read_bytes()):
-            reason,message='existing_completed_marker','上次试听因旧标记在分配前停止，没有注册新声音；本次按当前状态新建试听。'
+            reason,message='existing_completed_marker','The last audition stopped before allocation because of an old marker; no new sound was registered. A new audition will be created from the current state.'
         else:
             return False
     except (OSError,ValueError,KeyError,struct.error):
@@ -207,12 +207,12 @@ def on(root, state, battery, zig=None, *, power_confirmed=False,defer_reload=Fal
         options = {'expected': state['native_identity']} if state.get('native_identity') else {}
         prepared=trial.preflight(job, Path(state['backup_root']) / job.name, zig, **options)
         if prepared and prepared.get('adopted_existing_enabled'):
-            print('电子快门声已启用；已核对并接入声音工具，没有重复刷写。',flush=True)
+            print('Electronic shutter sound is already enabled; verified and connected to the sound tool without flashing again.',flush=True)
             return prepared
         return trial.change(job, zig=zig)
     result = operate(root, state, 'on', job, run)
-    print('声音支援已准备，继续保存当前片段；全部写入结束后统一提示断电。' if defer_reload else
-          '本次只接入已启用的声音开关，保持开机继续。' if result.get('adopted_existing_enabled') else RELOAD)
+    print('Sound support is ready; continuing to save the current clip. You will be prompted to power-cycle once all writes are done.' if defer_reload else
+          'Only connected the already-enabled sound switch this time; keep the camera on and continue.' if result.get('adopted_existing_enabled') else RELOAD)
     return result
 
 
@@ -293,7 +293,7 @@ def volume_audio(root, *, decibels=0, reset=False):
     import media
     root=Path(root).resolve();conversion=selected_conversion(root,None)
     if not conversion:
-        raise ValueError('请先转换所选片段，再调节音量。')
+        raise ValueError('Convert the selected clip first, then adjust the volume.')
     folder=new_path(root,'volume')
     report=media.adjust_volume(conversion,folder,decibels=decibels,reset=reset)
     return select_conversion(root,folder,report,'volume_adjusted_offline')
@@ -305,7 +305,7 @@ def audition(root, state, zig=None):
     require_idle(state, root)
     conversion=selected_conversion(root,state)
     if not conversion:
-        raise ValueError('请先点「转换所选片段」，转换成功后再试听。')
+        raise ValueError('Click "Convert selected clip" first, then audition once the conversion succeeds.')
     # The current request reconciles the actual marker once, before adoption.
     previous=None
     payload = (Path(conversion) / 'custom-native.private.bin').read_bytes()
@@ -341,7 +341,7 @@ def confirm_audio(root, state, result):
         state.setdefault('history',[]).append(dict(command='confirm-audio',result=result,owner_statement_only=True))
         save(root,state)
         value=dict(phase='owner_audio_statement_recorded',camera_io=False,owner_audio_correct=result=='correct')
-    print('试听结果已记录；可直接保存当前转换片段，无需先断电恢复。')
+    print('Audition result recorded; you can save the current converted clip directly, without a power cycle first.')
     return value
 
 
@@ -379,7 +379,7 @@ def install(root, state, battery, zig=None, *, power_confirmed=False):
     if previous_native and previous_native.get('identity'):
         state['native_identity']=previous_native['identity']
     if not previous_native or previous_native.get('phase')=='restored':
-        print('自动准备电子快门声支援；已有开关直接接入，不要求先手动开启或关联旧任务。',flush=True)
+        print('Preparing electronic shutter sound support automatically; an existing switch is connected directly, with no need to enable it manually or link an old job.',flush=True)
         on(root,state,battery,zig,power_confirmed=power_confirmed,defer_reload=True)
     original, _ = native_job(state)
     # Current selected bytes are sufficient. Do not use an old audition record
@@ -439,15 +439,15 @@ def restore_sound(root, state, zig=None):
     require_idle(state,root)
     job = restorable_install(root, state)
     if job is None:
-        raise ValueError('这个声音工作目录里没有可用的永久声音安装记录，本次没有连接相机。'
-                         '要还原相机的原厂快门音效，请点“恢复原厂功能”：它按相机当前字节还原全部声音程序，不依赖旧记录。')
+        raise ValueError('This sound workspace has no usable permanent sound install record; the camera was not connected. '
+                         'To restore the factory shutter sound, click "Factory Restore": it restores all sound programs from the current camera bytes and does not rely on old records.')
     if str(job) != state.get('boot_job'):
         # The latest record stopped part-way; it is archived, never repeated.
         if state.get('boot_job'):
             state.setdefault('history', []).append(dict(command='previous_installation', job=state['boot_job'],
                 phase='superseded_by_restorable_installation'))
         state['boot_job'] = str(job)
-        print('最近的声音安装记录不可直接恢复；改用同一机身最近一次完成的安装记录，从相机当前字节规划恢复。', flush=True)
+        print('The latest sound install record cannot be restored directly; using the most recent completed install record for the same body and planning the restore from the current camera bytes.', flush=True)
     result = operate(root, state, 'restore-sound', job, lambda: boot_trial.restore(job, zig))
     print(RELOAD)
     return result
@@ -628,8 +628,8 @@ def main(argv=None, *, report=None, failure=None):
         print(json.dumps(public if args.command not in ('status', 'doctor') else result, indent=2))
         return 0
     except (ValueError, OSError, ImportError, RuntimeError, KeyError) as exc:
-        detail=('\n电脑端音频处理失败，本次没有相机读写；请修正输入后重试。' if args.command=='volume' else
-                '\n电脑端转换失败，本次没有相机读写；请修正输入后重新转换。' if args.command=='import' else
+        detail=('\nAudio processing on the computer failed; the camera was not read or written. Fix the input and retry.' if args.command=='volume' else
+                '\nConversion on the computer failed; the camera was not read or written. Fix the input and convert again.' if args.command=='import' else
                 '\nKeep the workspace and backup; do not repeat unknown writes.')
         print('Stopped: ' + str(exc) + detail, file=sys.stderr)
         if failure is not None:

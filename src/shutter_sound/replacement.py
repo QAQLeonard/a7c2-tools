@@ -20,7 +20,7 @@ def command_lock(root):
     lock=DeviceLock(root.parent/('.'+root.name+'.sound.lock'))
     try:lock.__enter__()
     except ValueError as exc:
-        raise RuntimeError('另一个声音操作仍在执行，请等它结束后再点击。') from exc
+        raise RuntimeError('Another sound operation is still running; wait for it to finish, then click again.') from exc
     _local.locks=held|{root}
     try:yield
     finally:
@@ -94,7 +94,7 @@ class CurrentRequest:
             self.state.setdefault('history',[]).append(dict(command=pending.get('command'),job=pending.get('job'),
                 phase='superseded_by_current_selection',outcome=pending.get('outcome'),replacement=self.command))
             self.state['pending']=None
-            print('使用本次选择替换声音；旧任务已归档，接下来读取相机现况，不重放旧命令。',flush=True)
+            print('Replacing the sound with this selection; the old job is archived. Reading the camera state next; old commands are not replayed.',flush=True)
         if self.refresh:
             if self.state.get('native_job'):
                 self.state.setdefault('history',[]).append(dict(command='previous_native_support',
@@ -120,7 +120,7 @@ class CurrentRequest:
             finally:self.opening=False
             self.prepare()
         if expected and any(expected.get(k)!=self.camera.identity.get(k) for k in ('model','serial_sha256')):
-            raise ValueError('当前声音操作的机身绑定不一致')
+            raise ValueError('Body binding of the current sound operation is inconsistent')
         return self.camera
 
     def prepare(self):
@@ -139,7 +139,7 @@ def prepare_current(camera,folder,command):
         camera.mark_unknown()
         link=getattr(camera,'link',None)
         if link is not None:link.mutating=True
-        raise RuntimeError('相机执行入口当前仍被占用，本次声音操作尚未开始。请等待正在执行的操作结束。')
+        raise RuntimeError('The camera execution entry point is still in use; this sound operation has not started. Wait for the running operation to finish.')
     names=('shutter.staged.so','shutter.probe.result','a7c2.probe.result',
            'lut-runtime-staged.so','a7c2.runtime.result','lut-program-staged.so',
            'a7c2.install.request','a7c2.install.result','a7c2.wbi.request','a7c2.wbi.result',
@@ -157,14 +157,14 @@ def prepare_current(camera,folder,command):
         (folder/(name+'.before.private.bin')).write_bytes(raw)
     try:
         if camera.temp_read('libJit.so',True) is not None:
-            raise RuntimeError('相机开始了另一项操作，本次声音替换尚未执行。')
+            raise RuntimeError('The camera started another operation; this sound replacement has not run.')
         for name,raw in actual.items():
             current=camera.read('/tmp/jiritsu/'+name,True)
-            if current!=raw:raise RuntimeError('相机临时状态仍在变化，请等待当前操作结束。')
+            if current!=raw:raise RuntimeError('Camera temporary state is still changing; wait for the current operation to finish.')
         for name in actual:
             camera.temp_remove(name)
             current=camera.read('/tmp/jiritsu/'+name,True)
-            if current is not None:raise RuntimeError('当前声音临时文件替换未完成：'+name)
+            if current is not None:raise RuntimeError('Replacement of the current sound temporary file is incomplete: '+name)
     except BaseException:
         camera.mark_unknown()
         raise
