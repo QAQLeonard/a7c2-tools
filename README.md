@@ -41,16 +41,16 @@ A desktop tool for the **Sony A7C II (ILCE-7CM2)**: build card-update firmware a
 > [!IMPORTANT]
 > **This tool supports only the Sony A7C II (ILCE-7CM2) on firmware 2.01.** It does **not** work on any other model, including the original A7C, the A7 IV, A7CR, A7R V, A6700 and A7 V. The app refuses to connect to them; please don't try.
 
-For other models, these independent projects may help. They are not part of this project; check each one for its own scope and risks:
+The following independent projects and research resources are grouped by camera. Refer to each project's own documentation for its supported scope, usage and risks.
 
-| Camera | Project | What it is |
+| Camera | Projects | What they cover |
 | --- | --- | --- |
-| A7CR | [lzh2016zzz/a7cr-fl23-research](https://github.com/lzh2016zzz/a7cr-fl23-research) | FL2/FL3 porting research |
-| A7CR | [injectiver/a7cr-creative-look-tools](https://github.com/injectiver/a7cr-creative-look-tools) | Research tools for FL2/FL3 and custom looks on firmware 2.01 (source only, no flashing command) |
-| A7R V | [Hearts-Ace/sony-a7r5-custom-firmware](https://github.com/Hearts-Ace/sony-a7r5-custom-firmware) | FL2/FL3 firmware adaptation and RAW color research |
-| A7 IV | [DavidBuchanan314/ILCE-7M4-RE](https://github.com/DavidBuchanan314/ILCE-7M4-RE) | Firmware reverse-engineering notes |
-| A6700 | [xyzhangxin/sony-a6700-powerful](https://github.com/xyzhangxin/sony-a6700-powerful) | Chinese guide for firmware 2.00: Pico wiring, Fastboot, backups and feature unlocks |
-| A7 V | No in-camera firmware project yet | [751K/sony-a7m5-looks](https://github.com/751K/sony-a7m5-looks) ports the A7 V Creative Looks to Lightroom/Capture One profiles (computer only; the camera is not modified) |
+| **A7R V** | [Michael (Hearts-Ace) / sony-a7r5-custom-firmware](https://github.com/Hearts-Ace/sony-a7r5-custom-firmware) | Custom firmware, FL2/FL3, look and audio resources, and RAW color research; a major source for this project's color fitting and operators. |
+| **A7 IV** | [Erlla/sony-a7m4-custom-firmware](https://github.com/Erlla/sony-a7m4-custom-firmware)<br>[happyfrog2026/a7m4-color-research](https://github.com/happyfrog2026/a7m4-color-research)<br>[happyfrog2026/a74-recovery-tools](https://github.com/happyfrog2026/a74-recovery-tools)<br>[Itinerary200/a7m4-lut](https://github.com/Itinerary200/a7m4-lut)<br>[DavidBuchanan314/ILCE-7M4-RE](https://github.com/DavidBuchanan314/ILCE-7M4-RE) | Firmware customization and card updates; color pipelines, custom looks, names/icons and electronic shutter audio; backup/recovery tools; multi-space LUT conversion; low-level reverse engineering and Fastboot. |
+| **A7CR** | [lzh2016zzz/a7cr-fl23-research](https://github.com/lzh2016zzz/a7cr-fl23-research)<br>[injectiver/a7cr-creative-look-tools](https://github.com/injectiver/a7cr-creative-look-tools) | FL2/FL3 porting; research tools for native/custom looks, macOS USB handling and RAW/JPEG diagnostics. |
+| **A7C II** | [SONY-FW/a7c2-re](https://github.com/SONY-FW/a7c2-re)<br>[chocotan/a7c2-qemu](https://github.com/chocotan/a7c2-qemu)<br>[MDHan/a7c2-fl23-macos](https://github.com/MDHan/a7c2-fl23-macos)<br>[YuuLuo/a7c2-service-preload](https://github.com/YuuLuo/a7c2-service-preload) | Firmware, boot-chain and updater research; an independent QEMU emulator; macOS FL2/FL3 adaptation; USB service authentication and temporary code-execution research. |
+| **A6700** | [xyzhangxin/sony-a6700-powerful](https://github.com/xyzhangxin/sony-a6700-powerful) | Powerful6700 feature tools, custom shutter audio, USB maintenance protocols and Pico/Fastboot backup research. |
+| **A7 V** | [751K/sony-a7m5-looks · Sony Look Bridge](https://github.com/751K/sony-a7m5-looks) | Photo-development and Creative Look profiles, S-Log3 video LUTs, DCTLs and ARW decoding research covering multiple Sony models. |
 
 **Community:** [Telegram (recommended)](https://t.me/sonyfwlab) · [Discord](https://discord.gg/SwPdfSd9c)
 **Author:** Xiaohongshu [QAQLeonard（读研版）](https://www.xiaohongshu.com/user/profile/660501f7000000000600d03c) · Douyin **LeonardZ** (ID `90860261487`)
@@ -403,13 +403,19 @@ These images were captured with historical versions. Current looks have been ref
 
 ## Acknowledgements
 
+**Special thanks to [Michael (Hearts-Ace)](https://github.com/Hearts-Ace/sony-a7r5-custom-firmware).** Our color-fitting algorithms, response-modeling methods and related operator implementations are largely based on his research and code, adapted and further refined for the A7C II. His shared training tools, look resources and research materials, together with permission to use the relevant work, have provided a key foundation for this project’s color work.
+
 This is my first open-source project, and I never expected this much attention and support. Thank you, everyone.
 
 - **Collaborators:** thanks to [@UzLung1435](https://github.com/UzLung1435) for the FL23 refactor, the USB compatibility fixes and the photo/movie curve routing ([#5](https://github.com/QAQLeonard/a7c2-tools/pull/5), [#6](https://github.com/QAQLeonard/a7c2-tools/pull/6)), and to everyone who opened issues, sent pull requests or shared ideas.
 - **Color:** thanks to **门萨特里顿** and **爸总林先森** on Xiaohongshu for the DCPs, and to the community members who helped fit and compare the color standards. The built-in looks wouldn't exist without you.
 - **Projects this work builds on and cites:**
+  - [Erlla/sony-a7m4-custom-firmware](https://github.com/Erlla/sony-a7m4-custom-firmware): A7 IV firmware customization, card updates and feature settings; a reference for this project's installation and resource adaptation.
+  - [happyfrog2026/a7m4-color-research](https://github.com/happyfrog2026/a7m4-color-research) and [a74-recovery-tools](https://github.com/happyfrog2026/a74-recovery-tools): color pipelines, custom look names/icons, playback markers, and backup/recovery research and tools.
+  - [Itinerary200/a7m4-lut](https://github.com/Itinerary200/a7m4-lut): a reference for LUT color-space conversion and compatible transfer curves.
+  - [SONY-FW/a7c2-re](https://github.com/SONY-FW/a7c2-re) and [chocotan/a7c2-qemu](https://github.com/chocotan/a7c2-qemu): A7C II boot-chain, updater, AP/CP and emulator research supporting low-level analysis and offline validation.
+  - [DavidBuchanan314/ILCE-7M4-RE](https://github.com/DavidBuchanan314/ILCE-7M4-RE): Sony camera boot, storage and Fastboot reverse engineering.
   - [lzh2016zzz/a7cr-fl23-research](https://github.com/lzh2016zzz/a7cr-fl23-research): FL2/FL3 porting research on the A7CR, the starting point for this project's parameter, label and WBI methods.
-  - [Hearts-Ace/sony-a7r5-custom-firmware](https://github.com/Hearts-Ace/sony-a7r5-custom-firmware): FL2/FL3 firmware adaptation and RAW color research for the A7R V, a key reference for porting the FL2/FL3 color data.
   - [MDHan/a7c2-fl23-macos](https://github.com/MDHan/a7c2-fl23-macos): the macOS take on the A7C II, the reference for identifying camera storage and claiming USB on a Mac.
   - [ma1co/Sony-PMCA-RE](https://github.com/ma1co/Sony-PMCA-RE), [ma1co/fwtool.py](https://github.com/ma1co/fwtool.py) and [YuuLuo/a7c2-service-preload](https://github.com/YuuLuo/a7c2-service-preload): service-mode communication, firmware parsing and A7C II service-mode research.
   - And thanks to every developer who cites, shares or builds on this project.

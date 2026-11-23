@@ -41,16 +41,16 @@
 > [!IMPORTANT]
 > **本工具只支持 Sony A7C II（ILCE-7CM2），固件 2.01。**其他机型（包括初代 A7C、A7 IV、A7CR、A7R V、A6700、A7 V 等）都**不能**使用，程序会拒绝连接，请不要尝试。
 
-其他机型可以关注下面这些独立项目。它们和本项目没有关系，支持范围和风险以各自的说明为准：
+下表汇总相关机型的独立项目和研究资料。各项目的支持范围、使用方式和风险请以其自身说明为准。
 
 | 机型 | 项目 | 内容 |
 | --- | --- | --- |
-| A7CR | [lzh2016zzz/a7cr-fl23-research](https://github.com/lzh2016zzz/a7cr-fl23-research) | FL2／FL3 移植研究 |
-| A7CR | [injectiver/a7cr-creative-look-tools](https://github.com/injectiver/a7cr-creative-look-tools) | 固件 2.01 的 FL2／FL3 与自定义外观研究工具（研究源码，不提供刷写命令） |
-| A7R V | [Hearts-Ace/sony-a7r5-custom-firmware](https://github.com/Hearts-Ace/sony-a7r5-custom-firmware) | FL2／FL3 固件适配与 RAW 色彩研究 |
-| A7 IV | [DavidBuchanan314/ILCE-7M4-RE](https://github.com/DavidBuchanan314/ILCE-7M4-RE) | 机身固件逆向研究笔记 |
-| A6700 | [xyzhangxin/sony-a6700-powerful](https://github.com/xyzhangxin/sony-a6700-powerful) | 固件 2.00 中文教程：Pico 接线、进入 Fastboot、备份，以及功能解锁 |
-| A7 V | 暂时没有改机身固件的项目 | [751K/sony-a7m5-looks](https://github.com/751K/sony-a7m5-looks) 把 A7 V 的创意外观做成了 Lightroom／Capture One 配置文件（只在电脑上用，不改相机） |
+| **A7R V** | [Michael（Hearts-Ace）／sony-a7r5-custom-firmware](https://github.com/Hearts-Ace/sony-a7r5-custom-firmware) | 自定义固件、FL2／FL3、创意外观与声音资源，以及 RAW 色彩研究；本项目色彩拟合与算子实现的重要来源。 |
+| **A7 IV** | [Erlla/sony-a7m4-custom-firmware](https://github.com/Erlla/sony-a7m4-custom-firmware)<br>[happyfrog2026/a7m4-color-research](https://github.com/happyfrog2026/a7m4-color-research)<br>[happyfrog2026/a74-recovery-tools](https://github.com/happyfrog2026/a74-recovery-tools)<br>[Itinerary200/a7m4-lut](https://github.com/Itinerary200/a7m4-lut)<br>[DavidBuchanan314/ILCE-7M4-RE](https://github.com/DavidBuchanan314/ILCE-7M4-RE) | 固件定制与卡刷；色彩管线、自定义外观、名称／图标和电子快门声音；备份恢复工具；多色彩空间 LUT 转换；底层逆向与 Fastboot。 |
+| **A7CR** | [lzh2016zzz/a7cr-fl23-research](https://github.com/lzh2016zzz/a7cr-fl23-research)<br>[injectiver/a7cr-creative-look-tools](https://github.com/injectiver/a7cr-creative-look-tools) | FL2／FL3 移植研究；原生与自定义外观、macOS USB 和 RAW／JPEG 诊断研究工具。 |
+| **A7C II** | [SONY-FW/a7c2-re](https://github.com/SONY-FW/a7c2-re)<br>[chocotan/a7c2-qemu](https://github.com/chocotan/a7c2-qemu)<br>[MDHan/a7c2-fl23-macos](https://github.com/MDHan/a7c2-fl23-macos)<br>[YuuLuo/a7c2-service-preload](https://github.com/YuuLuo/a7c2-service-preload) | 固件逆向、启动链与更新器研究；独立 QEMU 模拟器；FL2／FL3 的 macOS 适配；USB 服务认证及临时执行研究。 |
+| **A6700** | [xyzhangxin/sony-a6700-powerful](https://github.com/xyzhangxin/sony-a6700-powerful) | Powerful6700 功能工具、自定义快门声音、USB 维护协议及 Pico／Fastboot 备份研究。 |
+| **A7 V** | [751K/sony-a7m5-looks · Sony Look Bridge](https://github.com/751K/sony-a7m5-looks) | 照片显影与创意外观的后期配置文件、S-Log3 视频 LUT、DCTL 及 ARW 解码研究，涵盖多款索尼机型。 |
 
 **交流群：**[Telegram（推荐）](https://t.me/sonyfwlab) · [Discord](https://discord.gg/SwPdfSd9c)
 **作者：**小红书 [QAQLeonard（读研版）](https://www.xiaohongshu.com/user/profile/660501f7000000000600d03c) · 抖音 **LeonardZ**（抖音号 `90860261487`）
@@ -401,13 +401,19 @@ Windows 固件生成使用包内工具，无需另装 WSL、Ubuntu 或 Python。
 
 ## 致谢
 
+**特别感谢 [Michael（Hearts-Ace）](https://github.com/Hearts-Ace/sony-a7r5-custom-firmware)。** 本项目的色彩拟合算法、响应建模和相关算子实现，主要基于他的研究与代码，并针对 A7C II 进行适配和后续优化。他分享的训练工具、外观资源与研究资料，以及对相关成果使用的授权，为本项目的色彩工作提供了重要支持。
+
 这是我的第一个开源项目，没想到能收到这么多关注和支持，真心谢谢大家。
 
 - **合作者**：感谢 [@UzLung1435](https://github.com/UzLung1435) 贡献的 FL23 重构、USB 兼容性修复和照片／视频曲线分流（[#5](https://github.com/QAQLeonard/a7c2-tools/pull/5)、[#6](https://github.com/QAQLeonard/a7c2-tools/pull/6)），也感谢每一位提交 Issue、PR 和建议的朋友。
 - **色彩**：感谢小红书 **门萨特里顿** 和 **爸总林先森** 提供 DCP，也感谢帮我拟合、比对色彩标准的网友。没有你们，就没有现在的内置外观。
 - **参考与引用的项目**：本项目站在这些工作的肩膀上——
+  - [Erlla/sony-a7m4-custom-firmware](https://github.com/Erlla/sony-a7m4-custom-firmware)：A7 IV 固件定制、卡刷与功能设置流程，为本项目的安装和资源适配提供参考。
+  - [happyfrog2026/a7m4-color-research](https://github.com/happyfrog2026/a7m4-color-research) 及 [a74-recovery-tools](https://github.com/happyfrog2026/a74-recovery-tools)：色彩管线、创意外观名称／图标、回放标记及备份恢复研究与工具。
+  - [Itinerary200/a7m4-lut](https://github.com/Itinerary200/a7m4-lut)：LUT 色彩空间转换与兼容传递曲线的参考。
+  - [SONY-FW/a7c2-re](https://github.com/SONY-FW/a7c2-re) 及 [chocotan/a7c2-qemu](https://github.com/chocotan/a7c2-qemu)：A7C II 启动链、更新器、AP／CP 和虚拟机研究，支持本项目的底层分析与离线验证。
+  - [DavidBuchanan314/ILCE-7M4-RE](https://github.com/DavidBuchanan314/ILCE-7M4-RE)：索尼相机启动、存储及 Fastboot 逆向研究。
   - [lzh2016zzz/a7cr-fl23-research](https://github.com/lzh2016zzz/a7cr-fl23-research)：A7CR 上的 FL2／FL3 移植研究，本项目参数、标签和 WBI 方法的起点。
-  - [Hearts-Ace/sony-a7r5-custom-firmware](https://github.com/Hearts-Ace/sony-a7r5-custom-firmware)：A7R V 的 FL2／FL3 固件适配与 RAW 色彩研究，FL2／FL3 色彩数据移植的重要参考。
   - [MDHan/a7c2-fl23-macos](https://github.com/MDHan/a7c2-fl23-macos)：A7C II 的 macOS 版本，Mac 上识别相机存储、接管 USB 的流程参考。
   - [ma1co/Sony-PMCA-RE](https://github.com/ma1co/Sony-PMCA-RE)、[ma1co/fwtool.py](https://github.com/ma1co/fwtool.py) 和 [YuuLuo/a7c2-service-preload](https://github.com/YuuLuo/a7c2-service-preload)：服务模式通信、固件解析和 A7C II 服务模式研究。
   - 也感谢所有引用、转载和二次开发本项目的开发者。
