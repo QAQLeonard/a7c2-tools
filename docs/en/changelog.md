@@ -1,8 +1,17 @@
 # Changelog
 
-- 3.10: mean-DE00 native-first fitting, monotone S-capable Gamma and six updated icon-bearing defaults; Ricoh uses our actual Adobe/Cobalt/C2 reference. Model validation only.
+## 3.10 stable release · Changes since 3.0.3 (2026-11-24)
 
-- Restore the original-trust buttons in First Trust/Advanced Settings, allow completed public-key installation to repeat, and preserve the original same-body backup. Correct card-recovery completion guidance to manual 2.01 flashing.
+- Add local firmware generation, First Trust and pre-flash settings using official 2.01 input. Windows needs no WSL; macOS skips driver installation. Builds use the selected output directory and replace matching build files.
+- Support full icon-bearing A7Look /2, fixed ST bases, the shared USB/Wi-Fi camera API and multiple LUT color spaces. Refit the six NC/CC/NN/AS/RP/RN defaults. Packages contain six native A7Look files; other looks and DCPs are distributed through Sony Imaging Cloud.
+- Use mean DE00 throughout fitting, native curves/matrices before the grid, and monotone S-capable Gamma. The four Fuji targets stay unchanged; Ricoh Positive/Negative use actual Adobe/Cobalt/C2 references at exposure 0 and amount 1. These are chart/model results, not physical-camera color acceptance.
+- Add mechanical custom audio with independent mechanical/electronic or combined selection. Fix short-exposure variants and duplicate ending playback; use one buffer per shutter group, shared within mechanical variants, with corrected release handling. Three physical single-shot RAM listening cases passed. Persistent-audio cold boot and concurrent pre-capture remain unqualified.
+- Use M4 portrait resources to improve Creative Look panel borders and route fixed-slot live-status icons. Historical look identity in photo playback remains under research.
+- Recover through version preparation to 2.00 followed by a manual 2.01 card update; recovery content and header are both 2.01. Repeatable trust and original-key restoration preserve the first same-body backup. Keep the camera on between writing pre-flash settings and flashing; write settings again if restarted.
+- Use a step-by-step installation guide, consolidate connection/USB tools in Advanced Settings and remove obsolete pages/manual completion records. Windows and Apple Silicon macOS14+ packages share the cloud logo. iOS has an updated project, without an installable IPA.
+- Stable Release classification adds no new physical acceptance. Ordinary packages exclude pre-capture; real Mac USB and untested combinations retain their recorded limits. Historical release pages remain; uploaded assets are available only on the latest release.
+
+The README describes current features, downloads and usage. Version, packaging, branch and validation progress belongs here. Earlier development records follow.
 
 ## 3.10 release preparation — 2026-11-23
 
