@@ -4,6 +4,14 @@ import pytest
 from looktool import fixedlooks,fixedlookscode,device_layout,runtimebindings
 from test_fl23_native_photo import original_camera_inputs
 
+
+def selected_converter(ap,mask):
+    """Real composition selects the converter before locking fixed look slots."""
+    result=bytearray(ap)
+    raw=bytes.fromhex(fixedlooks.asset()['legacy_transport_templates'][mask])
+    result[0x35287f0:0x35287f0+len(raw)]=raw
+    return bytes(result)
+
 def test_all_64_native_recipes_reproduce_the_distributed_asset():
     for mask in range(64):
         generated={str(k):v.hex() for k,v in fixedlookscode.code(mask).items()}
@@ -12,7 +20,7 @@ def test_all_64_native_recipes_reproduce_the_distributed_asset():
 
 
 def test_previous_status_branch_remains_usable_until_firmware_update(original_camera_inputs,tmp_path,monkeypatch):
-    ap=original_camera_inputs[0]['appFw.so']
+    ap=selected_converter(original_camera_inputs[0]['appFw.so'],63)
     target=bytearray(fixedlooks.patch(ap,63))
     for at in fixedlooks.asset()['status_icon_offsets']:
         raw=bytes.fromhex(fixedlooks.asset()['before'][str(at)])
@@ -29,10 +37,11 @@ def test_real_ap_all_slot_combinations_and_exact_restore(original_camera_inputs)
     ap=original_camera_inputs[0]['appFw.so']
     assert fixedlooks.inspect(ap)['mask']==0
     for mask in range(64):
-        target=fixedlooks.patch(ap,mask)
+        selected=selected_converter(ap,mask)
+        target=fixedlooks.patch(selected,mask)
         assert fixedlooks.inspect(target)['mask']==mask
         assert fixedlooks.present(target) and fixedlooks.inspect(target)['enabled']
-        assert fixedlooks.restore(target)==ap
+        assert fixedlooks.restore(target)==selected
         phoff=struct.unpack_from('<Q',ap,0x20)[0]
         entry_size,count=struct.unpack_from('<HH',ap,0x36)
         assert target[:phoff+entry_size*count]==ap[:phoff+entry_size*count]
@@ -44,7 +53,7 @@ def test_real_ap_all_slot_combinations_and_exact_restore(original_camera_inputs)
 
 @pytest.mark.parametrize('which',['predicate','setter','mask','image'])
 def test_partial_or_mixed_native_generation_is_rejected(original_camera_inputs,which):
-    ap=original_camera_inputs[0]['appFw.so'];target=bytearray(fixedlooks.patch(ap,63))
+    ap=selected_converter(original_camera_inputs[0]['appFw.so'],63);target=bytearray(fixedlooks.patch(ap,63))
     if which=='predicate':target[0x1b5cd14]^=1
     elif which=='setter':target[0x2614d4c]^=1
     elif which=='image':target[0x59896e8+0x48]^=1
@@ -54,7 +63,7 @@ def test_partial_or_mixed_native_generation_is_rejected(original_camera_inputs,w
     with pytest.raises(ValueError):fixedlooks.patch(bytes(target),1)
 
 def test_base_sync_rejects_a_non_ST_value_for_fixed_slot(original_camera_inputs):
-    ap=fixedlooks.patch(original_camera_inputs[0]['appFw.so'],2)
+    ap=fixedlooks.patch(selected_converter(original_camera_inputs[0]['appFw.so'],2),2)
     key=0x02cf0cd2
     with pytest.raises(ValueError,match='fixed'):runtimebindings.targets(ap,{key:b'\x08'})
     assert runtimebindings.targets(ap,{key:b'\0'})[0]['value']==0
@@ -81,7 +90,7 @@ def test_converter_mask_updates_and_slot_deactivation_keep_fixed_state(original_
     assert fixedlooks.inspect(reimport['appFw.so'])['mask']==4
 
 def test_native_sync_guards_cover_helpers_within_worker_buffer(original_camera_inputs,tmp_path,monkeypatch):
-    ap=fixedlooks.patch(original_camera_inputs[0]['appFw.so'],63)
+    ap=fixedlooks.patch(selected_converter(original_camera_inputs[0]['appFw.so'],63),63)
     monkeypatch.setattr(runtimebindings,'compile_worker',lambda *args,**kwargs:None)
     runtimebindings.build(ap,runtimebindings.targets(ap,{0x02cf0cd0:b'\0'}),tmp_path)
     header=(tmp_path/'look-bindings.private.h').read_text()

@@ -19,7 +19,7 @@ def run(request_path):
         view.local_looks.setChecked(False)
         args=view.firmware_args()
         assert not args['custom_looks']and not args['ssh']and not args['looks']and args['preset_pack']is None
-        assert args['sound']and args['vertical']and args['update_version']=='3.10'
+        assert args['sound']and args['vertical']and args['update_version']=='3.11'
         view.local_custom_looks.setChecked(True)
         assert view.firmware_args()['looks']==[]
         view.local_looks.setChecked(True)
@@ -109,7 +109,7 @@ def run(request_path):
     firmwarelocal.finish_output(cleanup,dict(signed=True),folder/'cleanup-job')
     assert [p.name for p in cleanup.iterdir()]==['BODYDATA.DAT']
     checks.append('successful_no_SSH_output_removes_API_intermediates')
-    report=dict(passed=True,version='3.10',checks=list(dict.fromkeys(checks)),feature_combinations=results,
+    report=dict(passed=True,version='3.11',checks=list(dict.fromkeys(checks)),feature_combinations=results,
                 prior_option_report=request.get('prior_report'),
                 camera_io=False,screenshots=False,new_validation_hashes=False)
     write_json(request['report'],report)

@@ -1,5 +1,6 @@
 """Run the /log dispatch in a disposable shell; never touch camera storage."""
 from pathlib import Path
+import os,shutil
 import subprocess
 import pytest
 from desktopapp import startup,sshboot
@@ -25,11 +26,17 @@ def test_hook_is_before_boot_and_external_script_cannot_change_parent():
 def test_missing_failed_or_exiting_log_script_does_not_stop_vendor_boot(tmp_path,body):
     target=tmp_path/'start.sh';main=tmp_path/'main.sh'
     windows=__import__('os').name=='nt'
-    linux=lambda p:'/mnt/'+p.drive[0].lower()+p.as_posix()[2:]if windows else str(p)
+    shell=shutil.which('sh')
+    if windows and not shell:
+        git=shutil.which('git')
+        candidate=(Path(git).resolve().parents[1]if git else Path(os.environ.get('ProgramFiles','C:/Program Files'))/'Git')/'bin/sh.exe'
+        if candidate.is_file():shell=str(candidate)
+    if not shell:pytest.skip('A POSIX shell is required to execute the camera startup fixture')
+    linux=lambda p:p.as_posix()
     if body is not None:target.write_text('echo HOOK_RAN\n'+body,encoding='utf-8',newline='\n')
     code=startup.patch_log_hook(ORIGINAL).decode().replace('/log/a7c2-start.sh',linux(target)).replace('/bin/busybox sh','/bin/sh').replace('/usr/bin/bootin.elf &','echo VENDOR_BOOT').replace('cat /proc/udm/upm_bootmode','printf NORM')
     main.write_text(code,encoding='utf-8',newline='\n')
-    command=['wsl.exe','-d','Ubuntu-22.04','--','/bin/sh',linux(main)]if windows else['/bin/sh',str(main)]
-    done=subprocess.run(command,capture_output=True,text=True,timeout=10)
+    command=[shell,linux(main)]
+    done=subprocess.run(command,stdin=subprocess.DEVNULL,capture_output=True,text=True,timeout=10)
     assert done.returncode==0 and 'VENDOR_BOOT'in done.stdout and 'CONTINUED'in done.stdout,done.stderr
     if body is not None and 'not shell syntax'not in body:assert 'HOOK_RAN'in done.stdout

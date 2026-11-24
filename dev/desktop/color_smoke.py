@@ -6,6 +6,10 @@ def run(resources_only=False):
     root=Path(__file__).resolve().parents[2]
     sys.path[:0]=[str(root/'src'),str(root/'src/looks')]
     import os
+    if os.environ.get('A7C2_RELEASE_MATRIX'):
+        import runpy
+        return runpy.run_path(str(root/'dev/desktop/firmware_matrix.py'))['run'](
+            os.environ['A7C2_RELEASE_MATRIX'])
     if os.environ.get('A7C2_MACOS_RELEASE_SELFTEST'):
         import runpy
         return runpy.run_path(str(root/'dev/desktop/macos_release_smoke.py'))['run']()

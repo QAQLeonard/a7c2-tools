@@ -25,8 +25,8 @@ def test_complete_template_set_is_required():
         with pytest.raises(ValueError):firmwarelocal.default_template_names(bad)
 
 
-def test_version_defaults_follow_310():
-    assert VERSION=='3.10'
+def test_version_defaults_follow_311():
+    assert VERSION=='3.11'
     assert sshupdates.prepare_version_restore.__kwdefaults__['source_version']==VERSION
     assert firmwarefactory.OFFICIAL_VERSION=='2.01'
 

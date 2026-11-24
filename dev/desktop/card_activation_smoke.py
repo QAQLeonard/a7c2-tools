@@ -4,7 +4,7 @@ from pathlib import Path
 def run():
     from desktopapp import VERSION,firmwarefeatures,firmwarelocal
     from desktopapp.paths import ROOT
-    assert VERSION=='3.10'
+    assert VERSION=='3.11'
     for name in ('src/desktopapp/cardsettings.py','src/desktopapp/native/card_settings.c',
                  'dev/firmware/build_card_body.py','src/looks/looktool/verticalmenu.py'):
         assert not(ROOT/name).exists()

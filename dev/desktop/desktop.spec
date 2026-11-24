@@ -63,6 +63,7 @@ for relative,source in install_files().items():
     datas.append((str(source),str(Path(folder)/Path(relative).parent)))
 for name in ('desktop.py', 'LICENSE', 'README.md', 'README.zh-CN.md', 'desktop-requirements.txt',
              'dev/desktop/macos_release_smoke.py',
+             'dev/desktop/firmware_matrix.py',
              'dev/desktop/offline_smoke.py', 'dev/desktop/color_smoke.py', 'dev/desktop/m4_portrait_smoke.py', 'dev/desktop/install_pack_smoke.py', 'dev/desktop/output_directory_smoke.py', 'dev/desktop/native_firmware_smoke.py', 'dev/desktop/card_smoke.py', 'dev/desktop/card_activation_smoke.py', 'dev/desktop/card_flow_smoke.py', 'docs/en/lut-formats.md', 'docs/zh-CN/lut-formats.md',
              'docs/en/notices.md', 'docs/zh-CN/notices.md', 'docs/licenses/a7c2-fl23-macos-MIT.txt',
              'docs/licenses/project-legacy-MIT.txt',

@@ -1,4 +1,4 @@
-name: Current macOS 3.10 package
+name: Current macOS 3.11 package
 on:
   workflow_dispatch:
 permissions:
@@ -70,7 +70,7 @@ jobs:
         env:
           QT_QPA_PLATFORM: offscreen
           PYTHONPATH: src:src/looks:src/shutter_sound
-        run: python -m pytest -q -p no:cacheprovider -p no:faulthandler dev/shutter_sound/tests/test_targeted_sound.py dev/shutter_sound/tests/test_sound_shutdown.py dev/shutter_sound/tests/test_sound_variants.py dev/shutter_sound/tests/test_candidate.py dev/desktop/test_firmware_custom_sound.py
+        run: python -m pytest -q -p no:cacheprovider -p no:faulthandler dev/shutter_sound/tests/test_targeted_sound.py dev/shutter_sound/tests/test_sound_shutdown.py dev/shutter_sound/tests/test_sound_variants.py dev/shutter_sound/tests/test_candidate.py dev/desktop/test_firmware_custom_sound.py dev/desktop/test_fixed_bank_gamma.py
       - name: Build current native app and DMG
         run: python dev/desktop/build.py
       - name: Packaged app checks without camera or screenshots
@@ -117,10 +117,12 @@ jobs:
           data=json.loads(report.read_text());data['output_filesystem']='exFAT'
           report.write_text(json.dumps(data,indent=2)+'\n')
           PY
+      - name: Packaged custom-look and audio composition matrix
+        run: python dev/desktop/run_packaged_matrix.py --app dist/A7C2Tools.app/Contents/MacOS/A7C2Tools --source "$RUNNER_TEMP/official-input/BODYDATA.DAT" --workspace "$RUNNER_TEMP/composition-matrix"
       - uses: actions/upload-artifact@v4
         if: always()
         with:
-          name: A7C2Tools-macOS-arm64-3.10
+          name: A7C2Tools-macOS-arm64-3.11
           path: |
             dist/*.dmg
             dist/*self-test.json

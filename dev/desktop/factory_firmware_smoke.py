@@ -5,7 +5,7 @@ def run(request_path):
     request=json.loads(Path(request_path).read_text(encoding='utf-8'))
     report=firmwarefactory.build(request['arguments'],Path(request['job']))
     final=Path(report['candidate'])
-    assert VERSION=='3.10' and final.name=='BODYDATA.DAT' and final.is_file()
+    assert VERSION=='3.11' and final.name=='BODYDATA.DAT' and final.is_file()
     assert report['signed'] and report['original_body_byte_exact']
     assert report['update_header_version']=='2.01'
     assert report['signature_validation']['version']=='2.01'

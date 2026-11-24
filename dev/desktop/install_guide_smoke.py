@@ -17,8 +17,8 @@ def run(folder):
         assert not guide.findChildren(W.QTabBar)and guide.progress.text()=='第 1 步 / 共 4 步'
         assert guide.steps.count()==4
         assert not any('准备 SD 卡'in label.text()for label in guide.findChildren(W.QLabel))
-        assert view.text('firmware_update_version')=='3.10'and view.firmware_args()['update_version']=='3.10'
-        checks.append('saved_301_does_not_override_default_310_and_no_SD_step')
+        assert view.text('firmware_update_version')=='3.11'and view.firmware_args()['update_version']=='3.11'
+        checks.append('saved_301_does_not_override_default_311_and_no_SD_step')
         checks.append('default_wizard_and_advanced_settings_preserved')
         driver=guide.steps.widget(0);generator=guide.steps.widget(1)
         for action in ('driver_scan','usb_prepare','driver_install','connect','usb_stability','driver_uninstall'):
@@ -149,6 +149,6 @@ def run(folder):
         view.local_sound.setChecked(False)
         assert view.firmware_sound_args()is None and view.firmware_sound_panel.isHidden()
         checks.append('custom_shutter_file_clip_targets_reach_existing_generator')
-        return dict(passed=True,version='3.10',checks=checks,layout_metrics=metrics,
+        return dict(passed=True,version='3.11',checks=checks,layout_metrics=metrics,
                     camera_io=False,actual_firmware_built=False,screenshots=False)
     finally:view.close()

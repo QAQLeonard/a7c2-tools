@@ -19,7 +19,7 @@ def run():
     with patch.object(window,'load_settings',return_value={}):view=window.Window(demo=True)
     try:
         view.timer.stop();guide=view.install_guide
-        assert VERSION=='3.10'
+        assert VERSION=='3.11'
         assert guide.steps.count()==3 and guide.driver_pane is None
         assert guide.driver_button is None and len(guide.panels)==1
         assert view.nav_items['drivers'].text()=='USB 连接'

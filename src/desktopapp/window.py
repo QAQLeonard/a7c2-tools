@@ -322,7 +322,7 @@ class Window(W.QMainWindow):
 
     def install_guide_page(self):
         from .installguide import InstallGuide
-        layout=self.page('安装向导','跟着下面的四步完成 3.10 安装。已有驱动或已授信的相机，可以直接下一步。')
+        layout=self.page('安装向导',f'跟着下面的四步完成 {VERSION} 安装。已有驱动或已授信的相机，可以直接下一步。')
         layout.parentWidget().parentWidget().layout().setContentsMargins(28,22,28,20)
         self.install_guide=InstallGuide(self);layout.addWidget(self.install_guide,0,QtCore.Qt.AlignTop);layout.addStretch()
 
@@ -535,7 +535,7 @@ class Window(W.QMainWindow):
         form=self.box(layout,'来源与输出')
         self.field(form,'firmware_source','官方 A7C II 2.01 BODYDATA.DAT',kind='file',filter='Sony firmware (*.DAT);;All files (*)')
         self.field(form,'firmware_output','保存位置（可选 SD 卡）',value=self.work('local-firmware'),kind='directory')
-        self.field(form,'firmware_update_version','更新头版本',value='3.10').setText('3.10')
+        self.field(form,'firmware_update_version','更新头版本',value=VERSION).setText(VERSION)
         layout.setSizeConstraint(W.QLayout.SetMinimumSize)
         page_layout=layout
         layout=self.card(page_layout,'固件功能');layout.setSpacing(2)
@@ -666,7 +666,7 @@ class Window(W.QMainWindow):
             local.toggled.connect(config_box.setChecked)
             config_box.toggled.connect(local.setChecked)
         config_note=W.QLabel('勾选项应与“生成固件”页一致；只写入并保存所选设置，不刷写程序。'
-            '支持在官方 2.01 或现有 3.10 上刷前准备。'+reloadguide.PREFLASH_SETTINGS)
+            f'支持在官方 2.01 或现有 3.10／{VERSION} 上刷前准备。'+reloadguide.PREFLASH_SETTINGS)
         config_note.setWordWrap(True);config.addWidget(config_note)
         self.config_install_button=self.button(config,'通过 USB 写入所选功能配置','firmware_settings_install',
             self.feature_settings_args,primary=True)
@@ -1176,7 +1176,7 @@ class Window(W.QMainWindow):
                     {'electronic':'电子快门音效','mechanical':'机械快门音效','both':'电子与机械快门音效'}.get(arguments.get('selection'),'本次更新'))
             if action=='usb_restore_version':target='更新器版本资料 → 2.00；之后手动卡刷'
             if action=='usb_set_version':target='更新器版本资料 → '+arguments['target_version']
-            firmware_label=('官方 2.01 或现有 3.10 固件' if action=='firmware_settings_install' else
+            firmware_label=(f'官方 2.01 或现有 3.10／{VERSION} 固件' if action=='firmware_settings_install' else
                 '基于官方 2.01 的研究固件' if action in ('usb_restore_version','ssh_restore_version') else '固件 2.01')
             answer = W.QMessageBox.question(self, '开始相机写入',
                 scope + '目标：' + str(target) + '\n请确认机身为 ILCE-7CM2、'+firmware_label+'，电量充足（建议至少 50%）。\n'

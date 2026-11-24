@@ -118,8 +118,8 @@ def run(args, job, *, factory=None):
             version = camera.read('/setting/updater/dat4')
             owner.state['version_hex'] = version.hex()
             owner.save()
-            if version not in (b'\x01\x02', b'\x10\x03'):
-                raise ValueError('刷前配置仅支持官方 2.01 或现有 3.10；本次尚未写入设置')
+            if version not in (b'\x01\x02', b'\x10\x03', b'\x11\x03'):
+                raise ValueError('刷前配置仅支持官方 2.01 或现有 3.10／3.11；本次尚未写入设置')
             print('读取当前程序与设置，准备刷前配置…', flush=True)
             ap = camera.read('/usr/lib/appFw.so')
             cp = camera.read('/cp/cpapp-b.bin')

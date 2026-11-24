@@ -1,5 +1,10 @@
 # Development guide
 
+## 3.11 custom-look migration (2026-11-24)
+
+Fixed-look migration restores the native Gamma record load and both native Gamma calls before replacing the retired adapter code. Both legacy native-photo and full-record sources use precomputed fixed-bank curves. Release regression covers no looks, neutral slots, defaults, legacy looks, mixed types and a single selected slot crossed with factory, electronic, mechanical and both audio selections; original Gamma instructions and native record pointers are checked. These local and packaged tests do not establish physical cold-boot acceptance.
+
+
 ## Mean-DE00 native-first fitting (2026-11-23)
 
 Development source now uses one mean CIEDE2000 data objective for continuous

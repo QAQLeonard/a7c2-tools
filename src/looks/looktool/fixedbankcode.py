@@ -17,6 +17,12 @@ PROFILE_CHANGE_HOOK=0x23FFD4
 PROFILE_CHANGE_VENEER=0xC2FEF0
 PROFILE_CHANGE_RETURN=0x23FFDA
 PROFILE_CHANGE_ORIGINAL=bytes.fromhex('00268cf80760')
+# Fixed records already contain their complete Gamma curves. The retired
+# native-photo adapter's temporary-curve hooks must return to the native path
+# before its code window is replaced by veneers and padding.
+NATIVE_GAMMA_HOOKS={0x323474:bytes.fromhex('50f82360'),
+                    0x323C64:bytes.fromhex('fff7f2fb'),
+                    0x9CE8B8:bytes.fromhex('54f5c8f5')}
 
 
 def generate(*,profile_change_notification=True):
@@ -137,6 +143,7 @@ def generate(*,profile_change_notification=True):
              0x6492E4:asm([f'b.w {pstub}'],BASE+0x6492E4),
              0x64963C:asm([f'b.w {sstub}'],BASE+0x64963C),
              0x64836C:asm([f'bl {mstub}'],BASE+0x64836C)}
+    patches.update(NATIVE_GAMMA_HOOKS)
     if profile_change_notification:
         patches[PROFILE_CHANGE_HOOK-BASE]=asm([f'b.w {PROFILE_CHANGE_VENEER}','nop'],PROFILE_CHANGE_HOOK)
     for site in sites:
@@ -160,6 +167,11 @@ def prepare(cp):
     for item in old['hooks']:
         at=item['offset'];raw=bytes.fromhex(item['after'])
         if cp[at:at+len(raw)]!=raw:raise ValueError('Existing look hook differs at '+hex(at))
+    previous={item['offset']:bytes.fromhex(item['after'])for item in old['hooks']}
+    for at,native in NATIVE_GAMMA_HOOKS.items():
+        raw=previous.get(at,native)
+        if cp[at:at+len(raw)]!=raw:
+            raise ValueError('Existing Gamma hook differs at '+hex(at))
     at=PROFILE_CHANGE_HOOK-BASE
     if cp[at:at+len(PROFILE_CHANGE_ORIGINAL)]!=PROFILE_CHANGE_ORIGINAL:
         raise ValueError('Native profile-change instructions differ')

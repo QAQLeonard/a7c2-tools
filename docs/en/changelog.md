@@ -1,5 +1,9 @@
 # Changelog
 
+## 3.11
+
+Fixed a known custom-look bug.
+
 ## 3.10 stable release · Changes since 3.0.3 (2026-11-24)
 
 - Add local firmware generation, First Trust and pre-flash settings using official 2.01 input. Windows needs no WSL; macOS skips driver installation. Builds use the selected output directory and replace matching build files.

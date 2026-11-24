@@ -7,7 +7,7 @@ def run():
     view=window.Window(demo=True)
     try:
         view.timer.stop()
-        assert VERSION=='3.10' and view.recovery_transport.value()=='usb'
+        assert VERSION=='3.11' and view.recovery_transport.value()=='usb'
         assert '2.00' in view.factory_button.text()
         with patch.object(view,'launch') as launch:view.factory_button.click()
         action,args=launch.call_args.args
